@@ -2,6 +2,7 @@
 // Jad home page: http://www.kpdus.com/jad.html
 // Decompiler options: packimports(3) 
 
+import javax.swing.*;
 import java.applet.Applet;
 import java.awt.Color;
 import java.awt.Component;
@@ -206,11 +207,11 @@ public class JagApplet extends Applet implements Runnable, MouseListener, MouseM
 		anInt25 = i;
 		anInt26 = j;
 		aLong27 = System.currentTimeMillis();
-		if (mouseevent.isMetaDown()) {
+		if (SwingUtilities.isRightMouseButton(mouseevent)) {
 			anInt24 = 2;
 			anInt21 = 2;
 			return;
-		} else {
+		} else if (SwingUtilities.isLeftMouseButton(mouseevent)){
 			anInt24 = 1;
 			anInt21 = 1;
 			return;
