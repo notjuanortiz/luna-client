@@ -5,12 +5,12 @@
 public class Npc extends Actor {
 
 	public Model method569() {
-		if (super.anInt1624 >= 0 && super.anInt1627 == 0) {
-			int i = Animation.animations[super.anInt1624].anIntArray295[super.anInt1625];
+		if (super.currentAnimation >= 0 && super.animationDelay == 0) {
+			int i = Animation.animations[super.currentAnimation].anIntArray295[super.animationFrame];
 			int k = -1;
 			if (super.anInt1588 >= 0 && super.anInt1588 != super.anInt1634)
 				k = Animation.animations[super.anInt1588].anIntArray295[super.anInt1589];
-			return def.method362(i, k, 0, Animation.animations[super.anInt1624].anIntArray299);
+			return def.method362(i, k, 0, Animation.animations[super.currentAnimation].anIntArray299);
 		}
 		int j = -1;
 		if (super.anInt1588 >= 0)

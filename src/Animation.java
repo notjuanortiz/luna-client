@@ -72,7 +72,7 @@ public class Animation {
 			else if (attribute == 10)
 				anInt306 = buf.getByte();
 			else if (attribute == 11)
-				anInt307 = buf.getByte();
+				type = buf.getByte();
 			else if (attribute == 12)
 				anInt308 = buf.getInt();
 			else
@@ -110,7 +110,7 @@ public class Animation {
 		anInt304 = 99;
 		anInt305 = -1;
 		anInt306 = -1;
-		anInt307 = 2;
+		type = 2;
 	}
 
 	public static int count;
@@ -128,7 +128,7 @@ public class Animation {
 	public int anInt304;
 	public int anInt305;
 	public int anInt306;
-	public int anInt307;
+	public int type;
 	public int anInt308;
 	public static int anInt309;
 

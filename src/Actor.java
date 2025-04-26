@@ -40,8 +40,8 @@ public abstract class Actor extends Entity {
 			x++;
 			y--;
 		}
-		if (anInt1624 != -1 && Animation.animations[anInt1624].anInt306 == 1)
-			anInt1624 = -1;
+		if (currentAnimation != -1 && Animation.animations[currentAnimation].anInt306 == 1)
+			currentAnimation = -1;
 		if (walkingQueueSize < 9)
 			walkingQueueSize++;
 		for (int pos = walkingQueueSize; pos > 0; pos--) {
@@ -55,7 +55,7 @@ public abstract class Actor extends Entity {
 		runningQueue[0] = running;
 	}
 
-	public void method567(int i, boolean flag, int j, int k) {
+	public void applyHit(int i, boolean flag, int j, int k) {
 		for (int l = 0; l < 4; l++)
 			if (anIntArray1632[l] <= i) {
 				anIntArray1630[l] = j;
@@ -69,8 +69,8 @@ public abstract class Actor extends Entity {
 	}
 
 	public void teleport(int x, int y, boolean discard) {
-		if (anInt1624 != -1 && Animation.animations[anInt1624].anInt306 == 1)
-			anInt1624 = -1;
+		if (currentAnimation != -1 && Animation.animations[currentAnimation].anInt306 == 1)
+			currentAnimation = -1;
 		if (!discard) {
 			int k = x - walkingQueueX[0];
 			int i1 = y - walkingQueueY[0];
@@ -100,23 +100,23 @@ public abstract class Actor extends Entity {
 
 	public Actor() {
 		anInt1581 = -89;
-		anInt1582 = 100;
+		forcedChatTicks = 100;
 		walkingQueueX = new int[10];
 		walkingQueueY = new int[10];
 		anInt1588 = -1;
 		runningQueue = new boolean[10];
 		aBoolean1592 = false;
 		anInt1594 = 200;
-		anInt1595 = -1000;
+		lastHitCycle = -1000;
 		anInt1600 = 32;
 		anInt1601 = 1;
-		anInt1609 = -1;
+		transformationId = -1;
 		anInt1614 = -1;
 		anInt1619 = -1;
 		anInt1620 = -1;
 		anInt1621 = -1;
 		anInt1622 = -1;
-		anInt1624 = -1;
+		currentAnimation = -1;
 		anInt1629 = -1;
 		anIntArray1630 = new int[4];
 		anIntArray1631 = new int[4];
@@ -125,9 +125,9 @@ public abstract class Actor extends Entity {
 		anInt1635 = -1;
 	}
 
-	public String aString1580;
+	public String forcedChatMessage;
 	public int anInt1581;
-	public int anInt1582;
+	public int forcedChatTicks;
 	public int anInt1583;
 	public int anInt1584;
 	public int pulseCycle;
@@ -140,11 +140,11 @@ public abstract class Actor extends Entity {
 	public boolean aBoolean1592;
 	public int anInt1593;
 	public int anInt1594;
-	public int anInt1595;
-	public int anInt1596;
-	public int anInt1597;
-	public int anInt1598;
-	public int anInt1599;
+	public int lastHitCycle;
+	public int hitType;
+	public int hitAmount;
+	public int nextStepX;
+	public int nextStepY;
 	public int anInt1600;
 	public int anInt1601;
 	public int anInt1602;
@@ -154,7 +154,7 @@ public abstract class Actor extends Entity {
 	public int anInt1606;
 	public int anInt1607;
 	public int anInt1608;
-	public int anInt1609;
+	public int transformationId;
 	public int unitX;
 	public int unitY;
 	public int anInt1612;
@@ -169,11 +169,11 @@ public abstract class Actor extends Entity {
 	public int anInt1621;
 	public int anInt1622;
 	public int anInt1623;
-	public int anInt1624;
-	public int anInt1625;
-	public int anInt1626;
-	public int anInt1627;
-	public int anInt1628;
+	public int currentAnimation;
+	public int animationFrame;
+	public int animationFrameCycle;
+	public int animationDelay;
+	public int animationResetCycle;
 	public int anInt1629;
 	public int anIntArray1630[];
 	public int anIntArray1631[];
