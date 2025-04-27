@@ -147,6 +147,7 @@ public class client extends JagApplet {
             return;
         }
     }
+
     private void stopMidi() {
         try {
             if (signlink.musicSr.isOpen()) {
@@ -634,7 +635,9 @@ public class client extends JagApplet {
         Region.lowMemory = false;
         ObjectDefinition.lowMemory = false;
     }
-private static int PROCESS_PACKET_COUNT = 100;//5
+
+    private static int PROCESS_PACKET_COUNT = 100;//5
+
     public void method28(byte byte0) {
         if (anInt1057 > 1)
             anInt1057--;
@@ -1294,18 +1297,18 @@ private static int PROCESS_PACKET_COUNT = 100;//5
                         outBuffer.putLength(outBuffer.position - i3);
                         chatInput = ChatCompressor.format(chatInput);
                         //  chatInput = ChatFilter.applyCensor((byte) 0, chatInput);
-                        thisPlayer.aString1580 = chatInput;
+                        thisPlayer.forcedChatMessage = chatInput;
                         thisPlayer.anInt1583 = colour;
                         thisPlayer.anInt1593 = movement;
-                        thisPlayer.anInt1582 = 150;
+                        thisPlayer.forcedChatTicks = 150;
                         if (playerRights == 2)
                             pushMessage("@cr2@" + thisPlayer.username, (byte) -123,
-                                    ((Actor) (thisPlayer)).aString1580, 2);
+                                    ((Actor) (thisPlayer)).forcedChatMessage, 2);
                         else if (playerRights == 1)
                             pushMessage("@cr1@" + thisPlayer.username, (byte) -123,
-                                    ((Actor) (thisPlayer)).aString1580, 2);
+                                    ((Actor) (thisPlayer)).forcedChatMessage, 2);
                         else
-                            pushMessage(thisPlayer.username, (byte) -123, ((Actor) (thisPlayer)).aString1580, 2);
+                            pushMessage(thisPlayer.username, (byte) -123, ((Actor) (thisPlayer)).forcedChatMessage, 2);
                         if (anInt1006 == 2) {
                             anInt1006 = 3;
                             aBoolean1212 = true;
@@ -1457,11 +1460,11 @@ private static int PROCESS_PACKET_COUNT = 100;//5
             if (opcode == 13) {
                 for (int i2 = 0; i2 < players.length; i2++)
                     if (players[i2] != null)
-                        players[i2].anInt1624 = -1;
+                        players[i2].currentAnimation = -1;
 
                 for (int l11 = 0; l11 < npcs.length; l11++)
                     if (npcs[l11] != null)
-                        npcs[l11].anInt1624 = -1;
+                        npcs[l11].currentAnimation = -1;
 
                 opcode = -1;
                 return true;
@@ -3221,7 +3224,7 @@ private static int PROCESS_PACKET_COUNT = 100;//5
                                     anInt1183++;
                                 }
 
-                            aStringArray1184[anInt1183] = Constants.DEBUG ? "Examine @lre@" + def.name +" id("+def.id+")" : "Examine @lre@" + def.name;
+                            aStringArray1184[anInt1183] = Constants.DEBUG ? "Examine @lre@" + def.name + " id(" + def.id + ")" : "Examine @lre@" + def.name;
                             anIntArray981[anInt1183] = 1564;
                             anIntArray982[anInt1183] = class50_sub1_sub4_sub1.id;
                             anIntArray979[anInt1183] = x;
@@ -4011,8 +4014,10 @@ private static int PROCESS_PACKET_COUNT = 100;//5
         for (int k = 0; k < updatedPlayerCount; k++) {
             int l = updatedPlayers[k];
             Npc npc = npcs[l];
-            int mask = buf.getByte();
-            if ((mask & 1) != 0) {
+            int updateMask = buf.getByte();
+
+            // Update NPC definition
+            if ((updateMask & 1) != 0) {
                 npc.def = NpcDefinition.forId(buf.getShortAdded());
                 npc.anInt1601 = npc.def.aByte642;
                 npc.anInt1600 = npc.def.anInt651;
@@ -4022,20 +4027,23 @@ private static int PROCESS_PACKET_COUNT = 100;//5
                 npc.anInt1622 = npc.def.anInt633;
                 npc.anInt1634 = npc.def.anInt621;
             }
-            if ((mask & 0x40) != 0) {
-                npc.anInt1609 = buf.getLEShort();
-                if (npc.anInt1609 == 65535)
-                    npc.anInt1609 = -1;
+            // Update NPC transformation
+            if ((updateMask & 0x40) != 0) {
+                npc.transformationId = buf.getLEShort();
+                if (npc.transformationId == 65535)
+                    npc.transformationId = -1;
             }
-            if ((mask & 0x80) != 0) {
+
+            // Update NPC animation
+            if ((updateMask & 0x80) != 0) {
                 int j1 = buf.getByteAdded();
                 int j2 = buf.getByteAdded();
-                npc.method567(pulseCycle, false, j1, j2);
-                npc.anInt1595 = pulseCycle + 300;
-                npc.anInt1596 = buf.getByte();
-                npc.anInt1597 = buf.getByteSubtracted();
+                npc.applyHit(pulseCycle, false, j1, j2);
+                npc.lastHitCycle = pulseCycle + 300;
+                npc.hitType = buf.getByte();
+                npc.hitAmount = buf.getByteSubtracted();
             }
-            if ((mask & 4) != 0) {
+            if ((updateMask & 4) != 0) {
                 npc.anInt1614 = buf.getShort();
                 int k1 = buf.method556();
                 npc.anInt1618 = k1 >> 16;
@@ -4047,47 +4055,53 @@ private static int PROCESS_PACKET_COUNT = 100;//5
                 if (npc.anInt1614 == 65535)
                     npc.anInt1614 = -1;
             }
-            if ((mask & 0x20) != 0) {
-                npc.aString1580 = buf.getString();
-                npc.anInt1582 = 100;
+            // NPC forced chat
+            if ((updateMask & 0x20) != 0) {
+                npc.forcedChatMessage = buf.getString();
+                npc.forcedChatTicks = 100;
             }
-            if ((mask & 8) != 0) {
-                npc.anInt1598 = buf.getLEShortA();
-                npc.anInt1599 = buf.getLEShort();
+            // Update NPC movement
+            if ((updateMask & 8) != 0) {
+                npc.nextStepX = buf.getLEShortA();
+                npc.nextStepY = buf.getLEShort();
             }
-            if ((mask & 2) != 0) {
+
+            // Update NPC animation
+            if ((updateMask & 2) != 0) {
                 int animationId = buf.getShort();
                 if (animationId == 65535)
                     animationId = -1;
                 int animationDelay = buf.getByteSubtracted();
-                if (animationId == npc.anInt1624 && animationId != -1) {
-                    int i3 = Animation.animations[animationId].anInt307;
-                    if (i3 == 1) {
-                        npc.anInt1625 = 0;
-                        npc.anInt1626 = 0;
-                        npc.anInt1627 = animationDelay;
-                        npc.anInt1628 = 0;
+                if (animationId == npc.currentAnimation && animationId != -1) {
+                    int animationType = Animation.animations[animationId].type;
+                    if (animationType == 1) {
+                        npc.animationFrame = 0;
+                        npc.animationFrameCycle = 0;
+                        npc.animationDelay = animationDelay;
+                        npc.animationResetCycle = 0;
                     }
-                    if (i3 == 2)
-                        npc.anInt1628 = 0;
+                    if (animationType == 2)
+                        npc.animationResetCycle = 0;
                 } else if (animationId == -1
-                        || npc.anInt1624 == -1
-                        || Animation.animations[animationId].anInt301 >= Animation.animations[npc.anInt1624].anInt301) {
-                    npc.anInt1624 = animationId;
-                    npc.anInt1625 = 0;
-                    npc.anInt1626 = 0;
-                    npc.anInt1627 = animationDelay;
-                    npc.anInt1628 = 0;
+                        || npc.currentAnimation == -1
+                        || Animation.animations[animationId].anInt301 >= Animation.animations[npc.currentAnimation].anInt301) {
+                    npc.currentAnimation = animationId;
+                    npc.animationFrame = 0;
+                    npc.animationFrameCycle = 0;
+                    npc.animationDelay = animationDelay;
+                    npc.animationResetCycle = 0;
                     npc.anInt1613 = npc.walkingQueueSize;
                 }
             }
-            if ((mask & 0x10) != 0) {
-                int i2 = buf.getByteSubtracted();
-                int l2 = buf.getByteSubtracted();
-                npc.method567(pulseCycle, false, i2, l2);
-                npc.anInt1595 = pulseCycle + 300;
-                npc.anInt1596 = buf.getByte();
-                npc.anInt1597 = buf.getByteNegated();
+
+            // Update NPC facing direction
+            if ((updateMask & 0x10) != 0) {
+                int facingX = buf.getByteSubtracted();
+                int facingY = buf.getByteSubtracted();
+                npc.applyHit(pulseCycle, false, facingX, facingY);
+                npc.lastHitCycle = pulseCycle + 300;
+                npc.hitType = buf.getByte();
+                npc.hitAmount = buf.getByteNegated();
             }
         }
 
@@ -4099,37 +4113,37 @@ private static int PROCESS_PACKET_COUNT = 100;//5
             if (i1 == 65535)
                 i1 = -1;
             int k2 = vec.getByteSubtracted();
-            if (i1 == ((Actor) (plr)).anInt1624 && i1 != -1) {
-                int k3 = Animation.animations[i1].anInt307;
+            if (i1 == ((Actor) (plr)).currentAnimation && i1 != -1) {
+                int k3 = Animation.animations[i1].type;
                 if (k3 == 1) {
-                    plr.anInt1625 = 0;
-                    plr.anInt1626 = 0;
-                    plr.anInt1627 = k2;
-                    plr.anInt1628 = 0;
+                    plr.animationFrame = 0;
+                    plr.animationFrameCycle = 0;
+                    plr.animationDelay = k2;
+                    plr.animationResetCycle = 0;
                 }
                 if (k3 == 2)
-                    plr.anInt1628 = 0;
+                    plr.animationResetCycle = 0;
             } else if (i1 == -1
-                    || ((Actor) (plr)).anInt1624 == -1
-                    || Animation.animations[i1].anInt301 >= Animation.animations[((Actor) (plr)).anInt1624].anInt301) {
-                plr.anInt1624 = i1;
-                plr.anInt1625 = 0;
-                plr.anInt1626 = 0;
-                plr.anInt1627 = k2;
-                plr.anInt1628 = 0;
+                    || ((Actor) (plr)).currentAnimation == -1
+                    || Animation.animations[i1].anInt301 >= Animation.animations[((Actor) (plr)).currentAnimation].anInt301) {
+                plr.currentAnimation = i1;
+                plr.animationFrame = 0;
+                plr.animationFrameCycle = 0;
+                plr.animationDelay = k2;
+                plr.animationResetCycle = 0;
                 plr.anInt1613 = ((Actor) (plr)).walkingQueueSize;
             }
         }
         if ((mask & 0x10) != 0) {
-            plr.aString1580 = vec.getString();
-            if (((Actor) (plr)).aString1580.charAt(0) == '~') {
-                plr.aString1580 = ((Actor) (plr)).aString1580.substring(1);
-                pushMessage(plr.username, (byte) -123, ((Actor) (plr)).aString1580, 2);
+            plr.forcedChatMessage = vec.getString();
+            if (((Actor) (plr)).forcedChatMessage.charAt(0) == '~') {
+                plr.forcedChatMessage = ((Actor) (plr)).forcedChatMessage.substring(1);
+                pushMessage(plr.username, (byte) -123, ((Actor) (plr)).forcedChatMessage, 2);
             } else if (plr == thisPlayer)
-                pushMessage(plr.username, (byte) -123, ((Actor) (plr)).aString1580, 2);
+                pushMessage(plr.username, (byte) -123, ((Actor) (plr)).forcedChatMessage, 2);
             plr.anInt1583 = 0;
             plr.anInt1593 = 0;
-            plr.anInt1582 = 150;
+            plr.forcedChatTicks = 150;
         }
         if ((mask & 0x100) != 0) {
             plr.anInt1602 = vec.getByteAdded();
@@ -4142,13 +4156,13 @@ private static int PROCESS_PACKET_COUNT = 100;//5
             plr.resetWalkingQueue();
         }
         if ((mask & 1) != 0) {
-            plr.anInt1609 = vec.getShortAdded();
-            if (((Actor) (plr)).anInt1609 == 65535)
-                plr.anInt1609 = -1;
+            plr.transformationId = vec.getShortAdded();
+            if (((Actor) (plr)).transformationId == 65535)
+                plr.transformationId = -1;
         }
         if ((mask & 2) != 0) {
-            plr.anInt1598 = vec.getShort();
-            plr.anInt1599 = vec.getShort();
+            plr.nextStepX = vec.getShort();
+            plr.nextStepY = vec.getShort();
         }
         if ((mask & 0x200) != 0) {
             plr.anInt1614 = vec.getShortAdded();
@@ -4173,10 +4187,10 @@ private static int PROCESS_PACKET_COUNT = 100;//5
         if ((mask & 0x400) != 0) {
             int l1 = vec.getByteAdded();
             int l2 = vec.getByteSubtracted();
-            plr.method567(pulseCycle, false, l1, l2);
-            plr.anInt1595 = pulseCycle + 300;
-            plr.anInt1596 = vec.getByteNegated();
-            plr.anInt1597 = vec.getByte();
+            plr.applyHit(pulseCycle, false, l1, l2);
+            plr.lastHitCycle = pulseCycle + 300;
+            plr.hitType = vec.getByteNegated();
+            plr.hitAmount = vec.getByte();
         }
         if ((mask & 0x40) != 0) {
             int i2 = vec.getShort();
@@ -4202,10 +4216,10 @@ private static int PROCESS_PACKET_COUNT = 100;//5
                         aClass50_Sub1_Sub2_1131.position = 0;
                         String s = ChatCompressor.decompress(aClass50_Sub1_Sub2_1131, length);
                         s = ChatFilter.applyCensor((byte) 0, s);
-                        plr.aString1580 = s;
+                        plr.forcedChatMessage = s;
                         plr.anInt1583 = i2 >> 8;
                         plr.anInt1593 = i2 & 0xff;
-                        plr.anInt1582 = 150;
+                        plr.forcedChatTicks = 150;
                         if (rights == 2 || rights == 3)
                             pushMessage("@cr2@" + plr.username, (byte) -123, s, 1);
                         else if (rights == 1)
@@ -4221,10 +4235,10 @@ private static int PROCESS_PACKET_COUNT = 100;//5
         if ((mask & 0x80) != 0) {
             int j2 = vec.getByteSubtracted();
             int j3 = vec.getByteNegated();
-            plr.method567(pulseCycle, false, j2, j3);
-            plr.anInt1595 = pulseCycle + 300;
-            plr.anInt1596 = vec.getByteSubtracted();
-            plr.anInt1597 = vec.getByte();
+            plr.applyHit(pulseCycle, false, j2, j3);
+            plr.lastHitCycle = pulseCycle + 300;
+            plr.hitType = vec.getByteSubtracted();
+            plr.hitAmount = vec.getByte();
         }
     }
 
@@ -4868,7 +4882,7 @@ private static int PROCESS_PACKET_COUNT = 100;//5
                                                 }
 
                                         }
-                                        aStringArray1184[anInt1183] =  Constants.DEBUG ? "Examine @lre@" + def.name +" id("+def.id+")" : "Examine @lre@" + def.name;
+                                        aStringArray1184[anInt1183] = Constants.DEBUG ? "Examine @lre@" + def.name + " id(" + def.id + ")" : "Examine @lre@" + def.name;
                                         anIntArray981[anInt1183] = 1094;
                                         anIntArray982[anInt1183] = def.id;
                                         anIntArray979[anInt1183] = l2;
@@ -4903,7 +4917,7 @@ private static int PROCESS_PACKET_COUNT = 100;//5
     public void method68(int i, byte byte0, Actor class50_sub1_sub4_sub3) {
         if (class50_sub1_sub4_sub3.unitX < 128 || class50_sub1_sub4_sub3.unitY < 128
                 || class50_sub1_sub4_sub3.unitX >= 13184 || class50_sub1_sub4_sub3.unitY >= 13184) {
-            class50_sub1_sub4_sub3.anInt1624 = -1;
+            class50_sub1_sub4_sub3.currentAnimation = -1;
             class50_sub1_sub4_sub3.anInt1614 = -1;
             class50_sub1_sub4_sub3.anInt1606 = 0;
             class50_sub1_sub4_sub3.anInt1607 = 0;
@@ -4916,7 +4930,7 @@ private static int PROCESS_PACKET_COUNT = 100;//5
         if (class50_sub1_sub4_sub3 == thisPlayer
                 && (class50_sub1_sub4_sub3.unitX < 1536 || class50_sub1_sub4_sub3.unitY < 1536
                 || class50_sub1_sub4_sub3.unitX >= 11776 || class50_sub1_sub4_sub3.unitY >= 11776)) {
-            class50_sub1_sub4_sub3.anInt1624 = -1;
+            class50_sub1_sub4_sub3.currentAnimation = -1;
             class50_sub1_sub4_sub3.anInt1614 = -1;
             class50_sub1_sub4_sub3.anInt1606 = 0;
             class50_sub1_sub4_sub3.anInt1607 = 0;
@@ -4959,10 +4973,10 @@ private static int PROCESS_PACKET_COUNT = 100;//5
 
     public void method70(Actor class50_sub1_sub4_sub3, int i) {
         if (class50_sub1_sub4_sub3.anInt1607 == pulseCycle
-                || class50_sub1_sub4_sub3.anInt1624 == -1
-                || class50_sub1_sub4_sub3.anInt1627 != 0
-                || class50_sub1_sub4_sub3.anInt1626 + 1 > Animation.animations[class50_sub1_sub4_sub3.anInt1624]
-                .method205(0, class50_sub1_sub4_sub3.anInt1625)) {
+                || class50_sub1_sub4_sub3.currentAnimation == -1
+                || class50_sub1_sub4_sub3.animationDelay != 0
+                || class50_sub1_sub4_sub3.animationFrameCycle + 1 > Animation.animations[class50_sub1_sub4_sub3.currentAnimation]
+                .method205(0, class50_sub1_sub4_sub3.animationFrame)) {
             int j = class50_sub1_sub4_sub3.anInt1607 - class50_sub1_sub4_sub3.anInt1606;
             int k = pulseCycle - class50_sub1_sub4_sub3.anInt1606;
             int l = class50_sub1_sub4_sub3.anInt1602 * 128 + class50_sub1_sub4_sub3.anInt1601 * 64;
@@ -4992,8 +5006,8 @@ private static int PROCESS_PACKET_COUNT = 100;//5
             class50_sub1_sub4_sub3.anInt1623 = 0;
             return;
         }
-        if (class50_sub1_sub4_sub3.anInt1624 != -1 && class50_sub1_sub4_sub3.anInt1627 == 0) {
-            Animation class14 = Animation.animations[class50_sub1_sub4_sub3.anInt1624];
+        if (class50_sub1_sub4_sub3.currentAnimation != -1 && class50_sub1_sub4_sub3.animationDelay == 0) {
+            Animation class14 = Animation.animations[class50_sub1_sub4_sub3.currentAnimation];
             if (class50_sub1_sub4_sub3.anInt1613 > 0 && class14.anInt305 == 0) {
                 class50_sub1_sub4_sub3.anInt1623++;
                 return;
@@ -5049,7 +5063,7 @@ private static int PROCESS_PACKET_COUNT = 100;//5
         class50_sub1_sub4_sub3.anInt1588 = k1;
         int l1 = 4;
         if (class50_sub1_sub4_sub3.anInt1612 != class50_sub1_sub4_sub3.anInt1584
-                && class50_sub1_sub4_sub3.anInt1609 == -1 && class50_sub1_sub4_sub3.anInt1600 != 0)
+                && class50_sub1_sub4_sub3.transformationId == -1 && class50_sub1_sub4_sub3.anInt1600 != 0)
             l1 = 2;
         if (class50_sub1_sub4_sub3.walkingQueueSize > 2)
             l1 = 6;
@@ -5094,8 +5108,8 @@ private static int PROCESS_PACKET_COUNT = 100;//5
             anInt928 = incomingRandom.nextInt();
         if (class50_sub1_sub4_sub3.anInt1600 == 0)
             return;
-        if (class50_sub1_sub4_sub3.anInt1609 != -1 && class50_sub1_sub4_sub3.anInt1609 < 32768) {
-            Npc class50_sub1_sub4_sub3_sub1 = npcs[class50_sub1_sub4_sub3.anInt1609];
+        if (class50_sub1_sub4_sub3.transformationId != -1 && class50_sub1_sub4_sub3.transformationId < 32768) {
+            Npc class50_sub1_sub4_sub3_sub1 = npcs[class50_sub1_sub4_sub3.transformationId];
             if (class50_sub1_sub4_sub3_sub1 != null) {
                 int l = class50_sub1_sub4_sub3.unitX - ((Actor) (class50_sub1_sub4_sub3_sub1)).unitX;
                 int j1 = class50_sub1_sub4_sub3.unitY - ((Actor) (class50_sub1_sub4_sub3_sub1)).unitY;
@@ -5103,8 +5117,8 @@ private static int PROCESS_PACKET_COUNT = 100;//5
                     class50_sub1_sub4_sub3.anInt1584 = (int) (Math.atan2(l, j1) * 325.94900000000001D) & 0x7ff;
             }
         }
-        if (class50_sub1_sub4_sub3.anInt1609 >= 32768) {
-            int i = class50_sub1_sub4_sub3.anInt1609 - 32768;
+        if (class50_sub1_sub4_sub3.transformationId >= 32768) {
+            int i = class50_sub1_sub4_sub3.transformationId - 32768;
             if (i == thisPlayerServerId)
                 i = thisPlayerId;
             Player class50_sub1_sub4_sub3_sub2 = players[i];
@@ -5115,14 +5129,14 @@ private static int PROCESS_PACKET_COUNT = 100;//5
                     class50_sub1_sub4_sub3.anInt1584 = (int) (Math.atan2(k1, l1) * 325.94900000000001D) & 0x7ff;
             }
         }
-        if ((class50_sub1_sub4_sub3.anInt1598 != 0 || class50_sub1_sub4_sub3.anInt1599 != 0)
+        if ((class50_sub1_sub4_sub3.nextStepX != 0 || class50_sub1_sub4_sub3.nextStepY != 0)
                 && (class50_sub1_sub4_sub3.walkingQueueSize == 0 || class50_sub1_sub4_sub3.anInt1623 > 0)) {
-            int j = class50_sub1_sub4_sub3.unitX - (class50_sub1_sub4_sub3.anInt1598 - nextTopLeftTileX - nextTopLeftTileX) * 64;
-            int i1 = class50_sub1_sub4_sub3.unitY - (class50_sub1_sub4_sub3.anInt1599 - nextTopLeftTileY - nextTopLeftTileY) * 64;
+            int j = class50_sub1_sub4_sub3.unitX - (class50_sub1_sub4_sub3.nextStepX - nextTopLeftTileX - nextTopLeftTileX) * 64;
+            int i1 = class50_sub1_sub4_sub3.unitY - (class50_sub1_sub4_sub3.nextStepY - nextTopLeftTileY - nextTopLeftTileY) * 64;
             if (j != 0 || i1 != 0)
                 class50_sub1_sub4_sub3.anInt1584 = (int) (Math.atan2(j, i1) * 325.94900000000001D) & 0x7ff;
-            class50_sub1_sub4_sub3.anInt1598 = 0;
-            class50_sub1_sub4_sub3.anInt1599 = 0;
+            class50_sub1_sub4_sub3.nextStepX = 0;
+            class50_sub1_sub4_sub3.nextStepY = 0;
         }
         int k = class50_sub1_sub4_sub3.anInt1584 - class50_sub1_sub4_sub3.anInt1612 & 0x7ff;
         if (k != 0) {
@@ -5175,34 +5189,34 @@ private static int PROCESS_PACKET_COUNT = 100;//5
                     && (class50_sub1_sub4_sub3.anInt1615 < 0 || class50_sub1_sub4_sub3.anInt1615 >= class14_1.anInt294))
                 class50_sub1_sub4_sub3.anInt1614 = -1;
         }
-        if (class50_sub1_sub4_sub3.anInt1624 != -1 && class50_sub1_sub4_sub3.anInt1627 <= 1) {
-            Animation class14_2 = Animation.animations[class50_sub1_sub4_sub3.anInt1624];
+        if (class50_sub1_sub4_sub3.currentAnimation != -1 && class50_sub1_sub4_sub3.animationDelay <= 1) {
+            Animation class14_2 = Animation.animations[class50_sub1_sub4_sub3.currentAnimation];
             if (class14_2.anInt305 == 1 && class50_sub1_sub4_sub3.anInt1613 > 0
                     && class50_sub1_sub4_sub3.anInt1606 <= pulseCycle && class50_sub1_sub4_sub3.anInt1607 < pulseCycle) {
-                class50_sub1_sub4_sub3.anInt1627 = 1;
+                class50_sub1_sub4_sub3.animationDelay = 1;
                 return;
             }
         }
-        if (class50_sub1_sub4_sub3.anInt1624 != -1 && class50_sub1_sub4_sub3.anInt1627 == 0) {
-            Animation class14_3 = Animation.animations[class50_sub1_sub4_sub3.anInt1624];
-            class50_sub1_sub4_sub3.anInt1626++;
-            if (class50_sub1_sub4_sub3.anInt1625 < class14_3.anInt294
-                    && class50_sub1_sub4_sub3.anInt1626 > class14_3.method205(0, class50_sub1_sub4_sub3.anInt1625)) {
-                class50_sub1_sub4_sub3.anInt1626 = 1;
-                class50_sub1_sub4_sub3.anInt1625++;
+        if (class50_sub1_sub4_sub3.currentAnimation != -1 && class50_sub1_sub4_sub3.animationDelay == 0) {
+            Animation class14_3 = Animation.animations[class50_sub1_sub4_sub3.currentAnimation];
+            class50_sub1_sub4_sub3.animationFrameCycle++;
+            if (class50_sub1_sub4_sub3.animationFrame < class14_3.anInt294
+                    && class50_sub1_sub4_sub3.animationFrameCycle > class14_3.method205(0, class50_sub1_sub4_sub3.animationFrame)) {
+                class50_sub1_sub4_sub3.animationFrameCycle = 1;
+                class50_sub1_sub4_sub3.animationFrame++;
             }
-            if (class50_sub1_sub4_sub3.anInt1625 >= class14_3.anInt294) {
-                class50_sub1_sub4_sub3.anInt1625 -= class14_3.anInt298;
-                class50_sub1_sub4_sub3.anInt1628++;
-                if (class50_sub1_sub4_sub3.anInt1628 >= class14_3.anInt304)
-                    class50_sub1_sub4_sub3.anInt1624 = -1;
-                if (class50_sub1_sub4_sub3.anInt1625 < 0 || class50_sub1_sub4_sub3.anInt1625 >= class14_3.anInt294)
-                    class50_sub1_sub4_sub3.anInt1624 = -1;
+            if (class50_sub1_sub4_sub3.animationFrame >= class14_3.anInt294) {
+                class50_sub1_sub4_sub3.animationFrame -= class14_3.anInt298;
+                class50_sub1_sub4_sub3.animationResetCycle++;
+                if (class50_sub1_sub4_sub3.animationResetCycle >= class14_3.anInt304)
+                    class50_sub1_sub4_sub3.currentAnimation = -1;
+                if (class50_sub1_sub4_sub3.animationFrame < 0 || class50_sub1_sub4_sub3.animationFrame >= class14_3.anInt294)
+                    class50_sub1_sub4_sub3.currentAnimation = -1;
             }
             class50_sub1_sub4_sub3.aBoolean1592 = class14_3.aBoolean300;
         }
-        if (class50_sub1_sub4_sub3.anInt1627 > 0)
-            class50_sub1_sub4_sub3.anInt1627--;
+        if (class50_sub1_sub4_sub3.animationDelay > 0)
+            class50_sub1_sub4_sub3.animationDelay--;
     }
 
     public void method74(int i) {
@@ -6316,10 +6330,10 @@ private static int PROCESS_PACKET_COUNT = 100;//5
             else
                 k = localPlayers[j];
             Player class50_sub1_sub4_sub3_sub2 = players[k];
-            if (class50_sub1_sub4_sub3_sub2 != null && ((Actor) (class50_sub1_sub4_sub3_sub2)).anInt1582 > 0) {
-                class50_sub1_sub4_sub3_sub2.anInt1582--;
-                if (((Actor) (class50_sub1_sub4_sub3_sub2)).anInt1582 == 0)
-                    class50_sub1_sub4_sub3_sub2.aString1580 = null;
+            if (class50_sub1_sub4_sub3_sub2 != null && ((Actor) (class50_sub1_sub4_sub3_sub2)).forcedChatTicks > 0) {
+                class50_sub1_sub4_sub3_sub2.forcedChatTicks--;
+                if (((Actor) (class50_sub1_sub4_sub3_sub2)).forcedChatTicks == 0)
+                    class50_sub1_sub4_sub3_sub2.forcedChatMessage = null;
             }
         }
 
@@ -6327,10 +6341,10 @@ private static int PROCESS_PACKET_COUNT = 100;//5
         for (int l = 0; l < localNpcCount; l++) {
             int i1 = anIntArray1134[l];
             Npc class50_sub1_sub4_sub3_sub1 = npcs[i1];
-            if (class50_sub1_sub4_sub3_sub1 != null && ((Actor) (class50_sub1_sub4_sub3_sub1)).anInt1582 > 0) {
-                class50_sub1_sub4_sub3_sub1.anInt1582--;
-                if (((Actor) (class50_sub1_sub4_sub3_sub1)).anInt1582 == 0)
-                    class50_sub1_sub4_sub3_sub1.aString1580 = null;
+            if (class50_sub1_sub4_sub3_sub1 != null && ((Actor) (class50_sub1_sub4_sub3_sub1)).forcedChatTicks > 0) {
+                class50_sub1_sub4_sub3_sub1.forcedChatTicks--;
+                if (((Actor) (class50_sub1_sub4_sub3_sub1)).forcedChatTicks == 0)
+                    class50_sub1_sub4_sub3_sub1.forcedChatMessage = null;
             }
         }
 
@@ -9082,20 +9096,20 @@ private static int PROCESS_PACKET_COUNT = 100;//5
                         aClass50_Sub1_Sub1_Sub1Array954[0].method461(anInt933 - 28, anInt932 - 12, -488);
                 }
             }
-            if (((Actor) (obj)).aString1580 != null
+            if (((Actor) (obj)).forcedChatMessage != null
                     && (i >= localPlayerCount || anInt1006 == 0 || anInt1006 == 3 || anInt1006 == 1
                     && method148(13292, ((Player) obj).username))) {
                 method136(((Actor) (obj)), false, ((Actor) (obj)).anInt1594);
                 if (anInt932 > -1 && anInt939 < anInt940) {
-                    anIntArray944[anInt939] = aClass50_Sub1_Sub1_Sub2_1061.method473(((Actor) (obj)).aString1580,
+                    anIntArray944[anInt939] = aClass50_Sub1_Sub1_Sub2_1061.method473(((Actor) (obj)).forcedChatMessage,
                             (byte) -53) / 2;
                     anIntArray943[anInt939] = aClass50_Sub1_Sub1_Sub2_1061.anInt1506;
                     anIntArray941[anInt939] = anInt932;
                     anIntArray942[anInt939] = anInt933;
                     anIntArray945[anInt939] = ((Actor) (obj)).anInt1583;
                     anIntArray946[anInt939] = ((Actor) (obj)).anInt1593;
-                    anIntArray947[anInt939] = ((Actor) (obj)).anInt1582;
-                    aStringArray948[anInt939++] = ((Actor) (obj)).aString1580;
+                    anIntArray947[anInt939] = ((Actor) (obj)).forcedChatTicks;
+                    aStringArray948[anInt939++] = ((Actor) (obj)).forcedChatMessage;
                     if (anInt998 == 0 && ((Actor) (obj)).anInt1593 >= 1 && ((Actor) (obj)).anInt1593 <= 3) {
                         anIntArray943[anInt939] += 10;
                         anIntArray942[anInt939] += 5;
@@ -9106,10 +9120,10 @@ private static int PROCESS_PACKET_COUNT = 100;//5
                         anIntArray943[anInt939] += 5;
                 }
             }
-            if (((Actor) (obj)).anInt1595 > pulseCycle) {
+            if (((Actor) (obj)).lastHitCycle > pulseCycle) {
                 method136(((Actor) (obj)), false, ((Actor) (obj)).anInt1594 + 15);
                 if (anInt932 > -1) {
-                    int l = (((Actor) (obj)).anInt1596 * 30) / ((Actor) (obj)).anInt1597;
+                    int l = (((Actor) (obj)).hitType * 30) / ((Actor) (obj)).hitAmount;
                     if (l > 30)
                         l = 30;
                     Drawable.method449(5, anInt933 - 3, 65280, (byte) -24, l, anInt932 - 15);

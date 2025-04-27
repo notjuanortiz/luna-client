@@ -51,8 +51,8 @@ public class Player extends Actor {
 	public Model method571(byte byte0) {
 		if (npc != null) {
 			int i = -1;
-			if (super.anInt1624 >= 0 && super.anInt1627 == 0)
-				i = Animation.animations[super.anInt1624].anIntArray295[super.anInt1625];
+			if (super.currentAnimation >= 0 && super.animationDelay == 0)
+				i = Animation.animations[super.currentAnimation].anIntArray295[super.animationFrame];
 			else if (super.anInt1588 >= 0)
 				i = Animation.animations[super.anInt1588].anIntArray295[super.anInt1589];
 			Model class50_sub1_sub4_sub4 = npc.method362(i, -1, 0, null);
@@ -65,9 +65,9 @@ public class Player extends Actor {
 		int j1 = -1;
 		if (byte0 != 122)
 			aBoolean1767 = !aBoolean1767;
-		if (super.anInt1624 >= 0 && super.anInt1627 == 0) {
-			Animation class14 = Animation.animations[super.anInt1624];
-			j = class14.anIntArray295[super.anInt1625];
+		if (super.currentAnimation >= 0 && super.animationDelay == 0) {
+			Animation class14 = Animation.animations[super.currentAnimation];
+			j = class14.anIntArray295[super.animationFrame];
 			if (super.anInt1588 >= 0 && super.anInt1588 != super.anInt1634)
 				k = Animation.animations[super.anInt1588].anIntArray295[super.anInt1589];
 			if (class14.anInt302 >= 0) {
@@ -145,7 +145,7 @@ public class Player extends Actor {
 		class50_sub1_sub4_sub4_2.method579(Class21.method239(j) & Class21.method239(k),
 				class50_sub1_sub4_sub4_1, 1244);
 		if (j != -1 && k != -1)
-			class50_sub1_sub4_sub4_2.method586(k, 0, j, Animation.animations[super.anInt1624].anIntArray299);
+			class50_sub1_sub4_sub4_2.method586(k, 0, j, Animation.animations[super.currentAnimation].anIntArray299);
 		else if (j != -1)
 			class50_sub1_sub4_sub4_2.method585(j, (byte) 6);
 		class50_sub1_sub4_sub4_2.method581(anInt1772);
