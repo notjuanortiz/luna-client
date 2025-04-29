@@ -51,8 +51,8 @@ public class Player extends Actor {
 	public Model method571(byte byte0) {
 		if (npc != null) {
 			int i = -1;
-			if (super.anInt1624 >= 0 && super.anInt1627 == 0)
-				i = Animation.animations[super.anInt1624].anIntArray295[super.anInt1625];
+			if (super.currentAnimation >= 0 && super.animationDelay == 0)
+				i = Animation.animations[super.currentAnimation].anIntArray295[super.animationFrame];
 			else if (super.anInt1588 >= 0)
 				i = Animation.animations[super.anInt1588].anIntArray295[super.anInt1589];
 			Model class50_sub1_sub4_sub4 = npc.method362(i, -1, 0, null);
@@ -65,9 +65,9 @@ public class Player extends Actor {
 		int j1 = -1;
 		if (byte0 != 122)
 			aBoolean1767 = !aBoolean1767;
-		if (super.anInt1624 >= 0 && super.anInt1627 == 0) {
-			Animation class14 = Animation.animations[super.anInt1624];
-			j = class14.anIntArray295[super.anInt1625];
+		if (super.currentAnimation >= 0 && super.animationDelay == 0) {
+			Animation class14 = Animation.animations[super.currentAnimation];
+			j = class14.anIntArray295[super.animationFrame];
 			if (super.anInt1588 >= 0 && super.anInt1588 != super.anInt1634)
 				k = Animation.animations[super.anInt1588].anIntArray295[super.anInt1589];
 			if (class14.anInt302 >= 0) {
@@ -145,7 +145,7 @@ public class Player extends Actor {
 		class50_sub1_sub4_sub4_2.method579(Class21.method239(j) & Class21.method239(k),
 				class50_sub1_sub4_sub4_1, 1244);
 		if (j != -1 && k != -1)
-			class50_sub1_sub4_sub4_2.method586(k, 0, j, Animation.animations[super.anInt1624].anIntArray299);
+			class50_sub1_sub4_sub4_2.method586(k, 0, j, Animation.animations[super.currentAnimation].anIntArray299);
 		else if (j != -1)
 			class50_sub1_sub4_sub4_2.method585(j, (byte) 6);
 		class50_sub1_sub4_sub4_2.method581(anInt1772);
@@ -170,15 +170,15 @@ public class Player extends Actor {
 		class50_sub1_sub4_sub4.aBoolean1680 = true;
 		if (aBoolean1763)
 			return class50_sub1_sub4_sub4;
-		if (super.anInt1614 != -1 && super.anInt1615 != -1) {
-			SpotAnimation class27 = SpotAnimation.spotAnimations[super.anInt1614];
+		if (super.graphicAnimation != -1 && super.graphicAnimationFrame != -1) {
+			SpotAnimation class27 = SpotAnimation.spotAnimations[super.graphicAnimation];
 			Model class50_sub1_sub4_sub4_2 = class27.getModel();
 			if (class50_sub1_sub4_sub4_2 != null) {
 				Model class50_sub1_sub4_sub4_3 = new Model(false, false, true,
-						class50_sub1_sub4_sub4_2, Class21.method239(super.anInt1615));
-				class50_sub1_sub4_sub4_3.method590(0, 0, false, -super.anInt1618);
+						class50_sub1_sub4_sub4_2, Class21.method239(super.graphicAnimationFrame));
+				class50_sub1_sub4_sub4_3.method590(0, 0, false, -super.graphicAnimationHeight);
 				class50_sub1_sub4_sub4_3.method584(7);
-				class50_sub1_sub4_sub4_3.method585(class27.animation.anIntArray295[super.anInt1615], (byte) 6);
+				class50_sub1_sub4_sub4_3.method585(class27.animation.anIntArray295[super.graphicAnimationFrame], (byte) 6);
 				class50_sub1_sub4_sub4_3.anIntArrayArray1679 = null;
 				class50_sub1_sub4_sub4_3.anIntArrayArray1678 = null;
 				if (class27.anInt561 != 128 || class27.anInt562 != 128)
@@ -263,18 +263,18 @@ public class Player extends Actor {
 		super.anInt1635 = buf.getShort();
 		if (super.anInt1635 == 65535)
 			super.anInt1635 = -1;
-		super.anInt1619 = buf.getShort();
-		if (super.anInt1619 == 65535)
-			super.anInt1619 = -1;
-		super.anInt1620 = buf.getShort();
-		if (super.anInt1620 == 65535)
-			super.anInt1620 = -1;
-		super.anInt1621 = buf.getShort();
-		if (super.anInt1621 == 65535)
-			super.anInt1621 = -1;
-		super.anInt1622 = buf.getShort();
-		if (super.anInt1622 == 65535)
-			super.anInt1622 = -1;
+		super.turnAnimation = buf.getShort();
+		if (super.turnAnimation == 65535)
+			super.turnAnimation = -1;
+		super.standAnimation = buf.getShort();
+		if (super.standAnimation == 65535)
+			super.standAnimation = -1;
+		super.deathAnimation = buf.getShort();
+		if (super.deathAnimation == 65535)
+			super.deathAnimation = -1;
+		super.combatLevel = buf.getShort();
+		if (super.combatLevel == 65535)
+			super.combatLevel = -1;
 		super.anInt1629 = buf.getShort();
 		if (super.anInt1629 == 65535)
 			super.anInt1629 = -1;

@@ -40,8 +40,8 @@ public abstract class Actor extends Entity {
 			x++;
 			y--;
 		}
-		if (anInt1624 != -1 && Animation.animations[anInt1624].anInt306 == 1)
-			anInt1624 = -1;
+		if (currentAnimation != -1 && Animation.animations[currentAnimation].anInt306 == 1)
+			currentAnimation = -1;
 		if (walkingQueueSize < 9)
 			walkingQueueSize++;
 		for (int pos = walkingQueueSize; pos > 0; pos--) {
@@ -69,8 +69,8 @@ public abstract class Actor extends Entity {
 	}
 
 	public void teleport(int x, int y, boolean discard) {
-		if (anInt1624 != -1 && Animation.animations[anInt1624].anInt306 == 1)
-			anInt1624 = -1;
+		if (currentAnimation != -1 && Animation.animations[currentAnimation].anInt306 == 1)
+			currentAnimation = -1;
 		if (!discard) {
 			int k = x - walkingQueueX[0];
 			int i1 = y - walkingQueueY[0];
@@ -94,8 +94,8 @@ public abstract class Actor extends Entity {
 		anInt1623 = 0;
 		walkingQueueX[0] = x;
 		walkingQueueY[0] = y;
-		unitX = walkingQueueX[0] * 128 + anInt1601 * 64;
-		unitY = walkingQueueY[0] * 128 + anInt1601 * 64;
+		unitX = walkingQueueX[0] * 128 + size * 64;
+		unitY = walkingQueueY[0] * 128 + size * 64;
 	}
 
 	public Actor() {
@@ -108,15 +108,15 @@ public abstract class Actor extends Entity {
 		aBoolean1592 = false;
 		anInt1594 = 200;
 		anInt1595 = -1000;
-		anInt1600 = 32;
-		anInt1601 = 1;
+		walkAnimation = 32;
+		size = 1;
 		anInt1609 = -1;
-		anInt1614 = -1;
-		anInt1619 = -1;
-		anInt1620 = -1;
-		anInt1621 = -1;
-		anInt1622 = -1;
-		anInt1624 = -1;
+		graphicAnimation = -1;
+		turnAnimation = -1;
+		standAnimation = -1;
+		deathAnimation = -1;
+		combatLevel = -1;
+		currentAnimation = -1;
 		anInt1629 = -1;
 		anIntArray1630 = new int[4];
 		anIntArray1631 = new int[4];
@@ -145,8 +145,8 @@ public abstract class Actor extends Entity {
 	public int anInt1597;
 	public int anInt1598;
 	public int anInt1599;
-	public int anInt1600;
-	public int anInt1601;
+	public int walkAnimation;
+	public int size;
 	public int anInt1602;
 	public int anInt1603;
 	public int anInt1604;
@@ -159,21 +159,25 @@ public abstract class Actor extends Entity {
 	public int unitY;
 	public int anInt1612;
 	public int anInt1613;
-	public int anInt1614;
-	public int anInt1615;
-	public int anInt1616;
-	public int anInt1617;
-	public int anInt1618;
-	public int anInt1619;
-	public int anInt1620;
-	public int anInt1621;
-	public int anInt1622;
+
+	// Spot animation (aka Gfx)
+	public int graphicAnimation;
+	public int graphicAnimationFrame;
+	public int graphicAnimationCycle;
+	public int graphicAnimationCycleEnd;
+	public int graphicAnimationHeight;
+	public int turnAnimation;
+	public int standAnimation;
+	public int deathAnimation;
+	public int combatLevel;
 	public int anInt1623;
-	public int anInt1624;
-	public int anInt1625;
-	public int anInt1626;
-	public int anInt1627;
-	public int anInt1628;
+
+	// Animation and state
+	public int currentAnimation;
+	public int animationFrame;
+	public int animationFrameCycle;
+	public int animationDelay;
+	public int animationCycleReset;
 	public int anInt1629;
 	public int anIntArray1630[];
 	public int anIntArray1631[];

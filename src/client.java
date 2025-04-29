@@ -1457,11 +1457,11 @@ private static int PROCESS_PACKET_COUNT = 100;//5
             if (opcode == 13) {
                 for (int i2 = 0; i2 < players.length; i2++)
                     if (players[i2] != null)
-                        players[i2].anInt1624 = -1;
+                        players[i2].currentAnimation = -1;
 
                 for (int l11 = 0; l11 < npcs.length; l11++)
                     if (npcs[l11] != null)
-                        npcs[l11].anInt1624 = -1;
+                        npcs[l11].currentAnimation = -1;
 
                 opcode = -1;
                 return true;
@@ -3300,44 +3300,49 @@ private static int PROCESS_PACKET_COUNT = 100;//5
         }
     }
 
-    public void handleNpcMovement(int i, byte byte0, JagBuffer buffer) {
+    public void handleNpcMovement(int packetSize, byte byte0, JagBuffer buffer) {
         buffer.initBitAccess();
         int npcCount = buffer.getBits(8);
-        if (byte0 != aByte1317)
-            anInt1281 = -460;
+
         if (npcCount < localNpcCount) {
-            for (int k = npcCount; k < localNpcCount; k++)
-                removePlayers[removePlayerCount++] = anIntArray1134[k];
+            for (int i = npcCount; i < localNpcCount; i++)
+                removePlayers[removePlayerCount++] = anIntArray1134[i];
 
         }
         if (npcCount > localNpcCount) {
             signlink.reporterror(thisPlayerName + " Too many npcs");
-            throw new RuntimeException("eek");
+            throw new RuntimeException("Too many NPCs in a single update packet");
         }
+
         localNpcCount = 0;
-        for (int l = 0; l < npcCount; l++) {
-            int i1 = anIntArray1134[l];
-            Npc npc = npcs[i1];
+
+        for (int i = 0; i < npcCount; i++) {
+            int npcIndex = anIntArray1134[i];
+            Npc npc = npcs[npcIndex];
             int updateRequired = buffer.getBits(1);
             if (updateRequired == 0) {
-                anIntArray1134[localNpcCount++] = i1;
+                // No movement, just update pulse cycle
+                anIntArray1134[localNpcCount++] = npcIndex;
                 npc.pulseCycle = pulseCycle;
             } else {
                 int moveType = buffer.getBits(2);
                 if (moveType == 0) {
-                    anIntArray1134[localNpcCount++] = i1;
+                    // No movement, but block update required
+                    anIntArray1134[localNpcCount++] = npcIndex;
                     npc.pulseCycle = pulseCycle;
-                    updatedPlayers[updatedPlayerCount++] = i1;
+                    updatedPlayers[updatedPlayerCount++] = npcIndex;
                 } else if (moveType == 1) {
-                    anIntArray1134[localNpcCount++] = i1;
+                    // Move one step
+                    anIntArray1134[localNpcCount++] = npcIndex;
                     npc.pulseCycle = pulseCycle;
                     int direction = buffer.getBits(3);
                     npc.addStep(direction, false);
                     int blockUpdateRequired = buffer.getBits(1);
                     if (blockUpdateRequired == 1)
-                        updatedPlayers[updatedPlayerCount++] = i1;
+                        updatedPlayers[updatedPlayerCount++] = npcIndex;
                 } else if (moveType == 2) {
-                    anIntArray1134[localNpcCount++] = i1;
+                    // Move two steps (for running)
+                    anIntArray1134[localNpcCount++] = npcIndex;
                     npc.pulseCycle = pulseCycle;
                     int direction1 = buffer.getBits(3);
                     npc.addStep(direction1, true);
@@ -3345,9 +3350,11 @@ private static int PROCESS_PACKET_COUNT = 100;//5
                     npc.addStep(direction2, true);
                     int blockUpdateRequired = buffer.getBits(1);
                     if (blockUpdateRequired == 1)
-                        updatedPlayers[updatedPlayerCount++] = i1;
-                } else if (moveType == 3)
-                    removePlayers[removePlayerCount++] = i1;
+                        updatedPlayers[updatedPlayerCount++] = npcIndex;
+                } else if (moveType == 3) {
+                    // Remove NPC
+                    removePlayers[removePlayerCount++] = npcIndex;
+                }
             }
         }
 
@@ -3733,7 +3740,7 @@ private static int PROCESS_PACKET_COUNT = 100;//5
             int i1 = ((Actor) (class50_sub1_sub4_sub3_sub1)).unitY >> 7;
             if (l < 0 || l >= 104 || i1 < 0 || i1 >= 104)
                 continue;
-            if (((Actor) (class50_sub1_sub4_sub3_sub1)).anInt1601 == 1
+            if (((Actor) (class50_sub1_sub4_sub3_sub1)).size == 1
                     && (((Actor) (class50_sub1_sub4_sub3_sub1)).unitX & 0x7f) == 64
                     && (((Actor) (class50_sub1_sub4_sub3_sub1)).unitY & 0x7f) == 64) {
                 if (anIntArrayArray886[l][i1] == anInt1138)
@@ -3747,7 +3754,7 @@ private static int PROCESS_PACKET_COUNT = 100;//5
                             ((Actor) (class50_sub1_sub4_sub3_sub1)).unitY,
                             ((Actor) (class50_sub1_sub4_sub3_sub1)).unitX, plane),
                     ((Actor) (class50_sub1_sub4_sub3_sub1)).aBoolean1592, 0, plane,
-                    (((Actor) (class50_sub1_sub4_sub3_sub1)).anInt1601 - 1) * 64 + 60,
+                    (((Actor) (class50_sub1_sub4_sub3_sub1)).size - 1) * 64 + 60,
                     ((Actor) (class50_sub1_sub4_sub3_sub1)).unitY,
                     ((Actor) (class50_sub1_sub4_sub3_sub1)).anInt1612);
         }
@@ -4014,12 +4021,12 @@ private static int PROCESS_PACKET_COUNT = 100;//5
             int mask = buf.getByte();
             if ((mask & 1) != 0) {
                 npc.def = NpcDefinition.forId(buf.getShortAdded());
-                npc.anInt1601 = npc.def.aByte642;
-                npc.anInt1600 = npc.def.anInt651;
-                npc.anInt1619 = npc.def.anInt645;
-                npc.anInt1620 = npc.def.anInt643;
-                npc.anInt1621 = npc.def.anInt641;
-                npc.anInt1622 = npc.def.anInt633;
+                npc.size = npc.def.aByte642;
+                npc.walkAnimation = npc.def.anInt651;
+                npc.turnAnimation = npc.def.anInt645;
+                npc.standAnimation = npc.def.anInt643;
+                npc.deathAnimation = npc.def.anInt641;
+                npc.combatLevel = npc.def.anInt633;
                 npc.anInt1634 = npc.def.anInt621;
             }
             if ((mask & 0x40) != 0) {
@@ -4036,16 +4043,16 @@ private static int PROCESS_PACKET_COUNT = 100;//5
                 npc.anInt1597 = buf.getByteSubtracted();
             }
             if ((mask & 4) != 0) {
-                npc.anInt1614 = buf.getShort();
+                npc.graphicAnimation = buf.getShort();
                 int k1 = buf.method556();
-                npc.anInt1618 = k1 >> 16;
-                npc.anInt1617 = pulseCycle + (k1 & 0xffff);
-                npc.anInt1615 = 0;
-                npc.anInt1616 = 0;
-                if (npc.anInt1617 > pulseCycle)
-                    npc.anInt1615 = -1;
-                if (npc.anInt1614 == 65535)
-                    npc.anInt1614 = -1;
+                npc.graphicAnimationHeight = k1 >> 16;
+                npc.graphicAnimationCycleEnd = pulseCycle + (k1 & 0xffff);
+                npc.graphicAnimationFrame = 0;
+                npc.graphicAnimationCycle = 0;
+                if (npc.graphicAnimationCycleEnd > pulseCycle)
+                    npc.graphicAnimationFrame = -1;
+                if (npc.graphicAnimation == 65535)
+                    npc.graphicAnimation = -1;
             }
             if ((mask & 0x20) != 0) {
                 npc.aString1580 = buf.getString();
@@ -4060,24 +4067,24 @@ private static int PROCESS_PACKET_COUNT = 100;//5
                 if (animationId == 65535)
                     animationId = -1;
                 int animationDelay = buf.getByteSubtracted();
-                if (animationId == npc.anInt1624 && animationId != -1) {
+                if (animationId == npc.currentAnimation && animationId != -1) {
                     int i3 = Animation.animations[animationId].anInt307;
                     if (i3 == 1) {
-                        npc.anInt1625 = 0;
-                        npc.anInt1626 = 0;
-                        npc.anInt1627 = animationDelay;
-                        npc.anInt1628 = 0;
+                        npc.animationFrame = 0;
+                        npc.animationFrameCycle = 0;
+                        npc.animationDelay = animationDelay;
+                        npc.animationCycleReset = 0;
                     }
                     if (i3 == 2)
-                        npc.anInt1628 = 0;
+                        npc.animationCycleReset = 0;
                 } else if (animationId == -1
-                        || npc.anInt1624 == -1
-                        || Animation.animations[animationId].anInt301 >= Animation.animations[npc.anInt1624].anInt301) {
-                    npc.anInt1624 = animationId;
-                    npc.anInt1625 = 0;
-                    npc.anInt1626 = 0;
-                    npc.anInt1627 = animationDelay;
-                    npc.anInt1628 = 0;
+                        || npc.currentAnimation == -1
+                        || Animation.animations[animationId].anInt301 >= Animation.animations[npc.currentAnimation].anInt301) {
+                    npc.currentAnimation = animationId;
+                    npc.animationFrame = 0;
+                    npc.animationFrameCycle = 0;
+                    npc.animationDelay = animationDelay;
+                    npc.animationCycleReset = 0;
                     npc.anInt1613 = npc.walkingQueueSize;
                 }
             }
@@ -4099,24 +4106,24 @@ private static int PROCESS_PACKET_COUNT = 100;//5
             if (i1 == 65535)
                 i1 = -1;
             int k2 = vec.getByteSubtracted();
-            if (i1 == ((Actor) (plr)).anInt1624 && i1 != -1) {
+            if (i1 == ((Actor) (plr)).currentAnimation && i1 != -1) {
                 int k3 = Animation.animations[i1].anInt307;
                 if (k3 == 1) {
-                    plr.anInt1625 = 0;
-                    plr.anInt1626 = 0;
-                    plr.anInt1627 = k2;
-                    plr.anInt1628 = 0;
+                    plr.animationFrame = 0;
+                    plr.animationFrameCycle = 0;
+                    plr.animationDelay = k2;
+                    plr.animationCycleReset = 0;
                 }
                 if (k3 == 2)
-                    plr.anInt1628 = 0;
+                    plr.animationCycleReset = 0;
             } else if (i1 == -1
-                    || ((Actor) (plr)).anInt1624 == -1
-                    || Animation.animations[i1].anInt301 >= Animation.animations[((Actor) (plr)).anInt1624].anInt301) {
-                plr.anInt1624 = i1;
-                plr.anInt1625 = 0;
-                plr.anInt1626 = 0;
-                plr.anInt1627 = k2;
-                plr.anInt1628 = 0;
+                    || ((Actor) (plr)).currentAnimation == -1
+                    || Animation.animations[i1].anInt301 >= Animation.animations[((Actor) (plr)).currentAnimation].anInt301) {
+                plr.currentAnimation = i1;
+                plr.animationFrame = 0;
+                plr.animationFrameCycle = 0;
+                plr.animationDelay = k2;
+                plr.animationCycleReset = 0;
                 plr.anInt1613 = ((Actor) (plr)).walkingQueueSize;
             }
         }
@@ -4151,16 +4158,16 @@ private static int PROCESS_PACKET_COUNT = 100;//5
             plr.anInt1599 = vec.getShort();
         }
         if ((mask & 0x200) != 0) {
-            plr.anInt1614 = vec.getShortAdded();
+            plr.graphicAnimation = vec.getShortAdded();
             int j1 = vec.method556();
-            plr.anInt1618 = j1 >> 16;
-            plr.anInt1617 = pulseCycle + (j1 & 0xffff);
-            plr.anInt1615 = 0;
-            plr.anInt1616 = 0;
-            if (((Actor) (plr)).anInt1617 > pulseCycle)
-                plr.anInt1615 = -1;
-            if (((Actor) (plr)).anInt1614 == 65535)
-                plr.anInt1614 = -1;
+            plr.graphicAnimationHeight = j1 >> 16;
+            plr.graphicAnimationCycleEnd = pulseCycle + (j1 & 0xffff);
+            plr.graphicAnimationFrame = 0;
+            plr.graphicAnimationCycle = 0;
+            if (((Actor) (plr)).graphicAnimationCycleEnd > pulseCycle)
+                plr.graphicAnimationFrame = -1;
+            if (((Actor) (plr)).graphicAnimation == 65535)
+                plr.graphicAnimation = -1;
         }
         if ((mask & 4) != 0) {
             int size = vec.getByte();
@@ -4903,27 +4910,27 @@ private static int PROCESS_PACKET_COUNT = 100;//5
     public void method68(int i, byte byte0, Actor class50_sub1_sub4_sub3) {
         if (class50_sub1_sub4_sub3.unitX < 128 || class50_sub1_sub4_sub3.unitY < 128
                 || class50_sub1_sub4_sub3.unitX >= 13184 || class50_sub1_sub4_sub3.unitY >= 13184) {
-            class50_sub1_sub4_sub3.anInt1624 = -1;
-            class50_sub1_sub4_sub3.anInt1614 = -1;
+            class50_sub1_sub4_sub3.currentAnimation = -1;
+            class50_sub1_sub4_sub3.graphicAnimation = -1;
             class50_sub1_sub4_sub3.anInt1606 = 0;
             class50_sub1_sub4_sub3.anInt1607 = 0;
             class50_sub1_sub4_sub3.unitX = class50_sub1_sub4_sub3.walkingQueueX[0] * 128
-                    + class50_sub1_sub4_sub3.anInt1601 * 64;
+                    + class50_sub1_sub4_sub3.size * 64;
             class50_sub1_sub4_sub3.unitY = class50_sub1_sub4_sub3.walkingQueueY[0] * 128
-                    + class50_sub1_sub4_sub3.anInt1601 * 64;
+                    + class50_sub1_sub4_sub3.size * 64;
             class50_sub1_sub4_sub3.resetWalkingQueue();
         }
         if (class50_sub1_sub4_sub3 == thisPlayer
                 && (class50_sub1_sub4_sub3.unitX < 1536 || class50_sub1_sub4_sub3.unitY < 1536
                 || class50_sub1_sub4_sub3.unitX >= 11776 || class50_sub1_sub4_sub3.unitY >= 11776)) {
-            class50_sub1_sub4_sub3.anInt1624 = -1;
-            class50_sub1_sub4_sub3.anInt1614 = -1;
+            class50_sub1_sub4_sub3.currentAnimation = -1;
+            class50_sub1_sub4_sub3.graphicAnimation = -1;
             class50_sub1_sub4_sub3.anInt1606 = 0;
             class50_sub1_sub4_sub3.anInt1607 = 0;
             class50_sub1_sub4_sub3.unitX = class50_sub1_sub4_sub3.walkingQueueX[0] * 128
-                    + class50_sub1_sub4_sub3.anInt1601 * 64;
+                    + class50_sub1_sub4_sub3.size * 64;
             class50_sub1_sub4_sub3.unitY = class50_sub1_sub4_sub3.walkingQueueY[0] * 128
-                    + class50_sub1_sub4_sub3.anInt1601 * 64;
+                    + class50_sub1_sub4_sub3.size * 64;
             class50_sub1_sub4_sub3.resetWalkingQueue();
         }
         if (class50_sub1_sub4_sub3.anInt1606 > pulseCycle)
@@ -4942,8 +4949,8 @@ private static int PROCESS_PACKET_COUNT = 100;//5
         if (!flag)
             aBoolean963 = !aBoolean963;
         int i = class50_sub1_sub4_sub3.anInt1606 - pulseCycle;
-        int j = class50_sub1_sub4_sub3.anInt1602 * 128 + class50_sub1_sub4_sub3.anInt1601 * 64;
-        int k = class50_sub1_sub4_sub3.anInt1604 * 128 + class50_sub1_sub4_sub3.anInt1601 * 64;
+        int j = class50_sub1_sub4_sub3.anInt1602 * 128 + class50_sub1_sub4_sub3.size * 64;
+        int k = class50_sub1_sub4_sub3.anInt1604 * 128 + class50_sub1_sub4_sub3.size * 64;
         class50_sub1_sub4_sub3.unitX += (j - class50_sub1_sub4_sub3.unitX) / i;
         class50_sub1_sub4_sub3.unitY += (k - class50_sub1_sub4_sub3.unitY) / i;
         class50_sub1_sub4_sub3.anInt1623 = 0;
@@ -4959,16 +4966,16 @@ private static int PROCESS_PACKET_COUNT = 100;//5
 
     public void method70(Actor class50_sub1_sub4_sub3, int i) {
         if (class50_sub1_sub4_sub3.anInt1607 == pulseCycle
-                || class50_sub1_sub4_sub3.anInt1624 == -1
-                || class50_sub1_sub4_sub3.anInt1627 != 0
-                || class50_sub1_sub4_sub3.anInt1626 + 1 > Animation.animations[class50_sub1_sub4_sub3.anInt1624]
-                .method205(0, class50_sub1_sub4_sub3.anInt1625)) {
+                || class50_sub1_sub4_sub3.currentAnimation == -1
+                || class50_sub1_sub4_sub3.animationDelay != 0
+                || class50_sub1_sub4_sub3.animationFrameCycle + 1 > Animation.animations[class50_sub1_sub4_sub3.currentAnimation]
+                .method205(0, class50_sub1_sub4_sub3.animationFrame)) {
             int j = class50_sub1_sub4_sub3.anInt1607 - class50_sub1_sub4_sub3.anInt1606;
             int k = pulseCycle - class50_sub1_sub4_sub3.anInt1606;
-            int l = class50_sub1_sub4_sub3.anInt1602 * 128 + class50_sub1_sub4_sub3.anInt1601 * 64;
-            int i1 = class50_sub1_sub4_sub3.anInt1604 * 128 + class50_sub1_sub4_sub3.anInt1601 * 64;
-            int j1 = class50_sub1_sub4_sub3.anInt1603 * 128 + class50_sub1_sub4_sub3.anInt1601 * 64;
-            int k1 = class50_sub1_sub4_sub3.anInt1605 * 128 + class50_sub1_sub4_sub3.anInt1601 * 64;
+            int l = class50_sub1_sub4_sub3.anInt1602 * 128 + class50_sub1_sub4_sub3.size * 64;
+            int i1 = class50_sub1_sub4_sub3.anInt1604 * 128 + class50_sub1_sub4_sub3.size * 64;
+            int j1 = class50_sub1_sub4_sub3.anInt1603 * 128 + class50_sub1_sub4_sub3.size * 64;
+            int k1 = class50_sub1_sub4_sub3.anInt1605 * 128 + class50_sub1_sub4_sub3.size * 64;
             class50_sub1_sub4_sub3.unitX = (l * (j - k) + j1 * k) / j;
             class50_sub1_sub4_sub3.unitY = (i1 * (j - k) + k1 * k) / j;
         }
@@ -4992,8 +4999,8 @@ private static int PROCESS_PACKET_COUNT = 100;//5
             class50_sub1_sub4_sub3.anInt1623 = 0;
             return;
         }
-        if (class50_sub1_sub4_sub3.anInt1624 != -1 && class50_sub1_sub4_sub3.anInt1627 == 0) {
-            Animation class14 = Animation.animations[class50_sub1_sub4_sub3.anInt1624];
+        if (class50_sub1_sub4_sub3.currentAnimation != -1 && class50_sub1_sub4_sub3.animationDelay == 0) {
+            Animation class14 = Animation.animations[class50_sub1_sub4_sub3.currentAnimation];
             if (class50_sub1_sub4_sub3.anInt1613 > 0 && class14.anInt305 == 0) {
                 class50_sub1_sub4_sub3.anInt1623++;
                 return;
@@ -5006,9 +5013,9 @@ private static int PROCESS_PACKET_COUNT = 100;//5
         int j = class50_sub1_sub4_sub3.unitX;
         int k = class50_sub1_sub4_sub3.unitY;
         int l = class50_sub1_sub4_sub3.walkingQueueX[class50_sub1_sub4_sub3.walkingQueueSize - 1] * 128
-                + class50_sub1_sub4_sub3.anInt1601 * 64;
+                + class50_sub1_sub4_sub3.size * 64;
         int i1 = class50_sub1_sub4_sub3.walkingQueueY[class50_sub1_sub4_sub3.walkingQueueSize - 1] * 128
-                + class50_sub1_sub4_sub3.anInt1601 * 64;
+                + class50_sub1_sub4_sub3.size * 64;
         if (l - j > 256 || l - j < -256 || i1 - k > 256 || i1 - k < -256) {
             class50_sub1_sub4_sub3.unitX = l;
             class50_sub1_sub4_sub3.unitY = i1;
@@ -5035,21 +5042,21 @@ private static int PROCESS_PACKET_COUNT = 100;//5
         int j1 = class50_sub1_sub4_sub3.anInt1584 - class50_sub1_sub4_sub3.anInt1612 & 0x7ff;
         if (j1 > 1024)
             j1 -= 2048;
-        int k1 = class50_sub1_sub4_sub3.anInt1620;
+        int k1 = class50_sub1_sub4_sub3.standAnimation;
         if (i != 0)
             outBuffer.putByte(34);
         if (j1 >= -256 && j1 <= 256)
-            k1 = class50_sub1_sub4_sub3.anInt1619;
+            k1 = class50_sub1_sub4_sub3.turnAnimation;
         else if (j1 >= 256 && j1 < 768)
-            k1 = class50_sub1_sub4_sub3.anInt1622;
+            k1 = class50_sub1_sub4_sub3.combatLevel;
         else if (j1 >= -768 && j1 <= -256)
-            k1 = class50_sub1_sub4_sub3.anInt1621;
+            k1 = class50_sub1_sub4_sub3.deathAnimation;
         if (k1 == -1)
-            k1 = class50_sub1_sub4_sub3.anInt1619;
+            k1 = class50_sub1_sub4_sub3.turnAnimation;
         class50_sub1_sub4_sub3.anInt1588 = k1;
         int l1 = 4;
         if (class50_sub1_sub4_sub3.anInt1612 != class50_sub1_sub4_sub3.anInt1584
-                && class50_sub1_sub4_sub3.anInt1609 == -1 && class50_sub1_sub4_sub3.anInt1600 != 0)
+                && class50_sub1_sub4_sub3.anInt1609 == -1 && class50_sub1_sub4_sub3.walkAnimation != 0)
             l1 = 2;
         if (class50_sub1_sub4_sub3.walkingQueueSize > 2)
             l1 = 6;
@@ -5061,7 +5068,7 @@ private static int PROCESS_PACKET_COUNT = 100;//5
         }
         if (class50_sub1_sub4_sub3.runningQueue[class50_sub1_sub4_sub3.walkingQueueSize - 1])
             l1 <<= 1;
-        if (l1 >= 8 && class50_sub1_sub4_sub3.anInt1588 == class50_sub1_sub4_sub3.anInt1619
+        if (l1 >= 8 && class50_sub1_sub4_sub3.anInt1588 == class50_sub1_sub4_sub3.turnAnimation
                 && class50_sub1_sub4_sub3.anInt1629 != -1)
             class50_sub1_sub4_sub3.anInt1588 = class50_sub1_sub4_sub3.anInt1629;
         if (j < l) {
@@ -5092,7 +5099,7 @@ private static int PROCESS_PACKET_COUNT = 100;//5
     public void method72(byte byte0, Actor class50_sub1_sub4_sub3) {
         if (byte0 != 8)
             anInt928 = incomingRandom.nextInt();
-        if (class50_sub1_sub4_sub3.anInt1600 == 0)
+        if (class50_sub1_sub4_sub3.walkAnimation == 0)
             return;
         if (class50_sub1_sub4_sub3.anInt1609 != -1 && class50_sub1_sub4_sub3.anInt1609 < 32768) {
             Npc class50_sub1_sub4_sub3_sub1 = npcs[class50_sub1_sub4_sub3.anInt1609];
@@ -5126,12 +5133,12 @@ private static int PROCESS_PACKET_COUNT = 100;//5
         }
         int k = class50_sub1_sub4_sub3.anInt1584 - class50_sub1_sub4_sub3.anInt1612 & 0x7ff;
         if (k != 0) {
-            if (k < class50_sub1_sub4_sub3.anInt1600 || k > 2048 - class50_sub1_sub4_sub3.anInt1600)
+            if (k < class50_sub1_sub4_sub3.walkAnimation || k > 2048 - class50_sub1_sub4_sub3.walkAnimation)
                 class50_sub1_sub4_sub3.anInt1612 = class50_sub1_sub4_sub3.anInt1584;
             else if (k > 1024)
-                class50_sub1_sub4_sub3.anInt1612 -= class50_sub1_sub4_sub3.anInt1600;
+                class50_sub1_sub4_sub3.anInt1612 -= class50_sub1_sub4_sub3.walkAnimation;
             else
-                class50_sub1_sub4_sub3.anInt1612 += class50_sub1_sub4_sub3.anInt1600;
+                class50_sub1_sub4_sub3.anInt1612 += class50_sub1_sub4_sub3.walkAnimation;
             class50_sub1_sub4_sub3.anInt1612 &= 0x7ff;
             if (class50_sub1_sub4_sub3.anInt1588 == class50_sub1_sub4_sub3.anInt1634
                     && class50_sub1_sub4_sub3.anInt1612 != class50_sub1_sub4_sub3.anInt1584) {
@@ -5139,7 +5146,7 @@ private static int PROCESS_PACKET_COUNT = 100;//5
                     class50_sub1_sub4_sub3.anInt1588 = class50_sub1_sub4_sub3.anInt1635;
                     return;
                 }
-                class50_sub1_sub4_sub3.anInt1588 = class50_sub1_sub4_sub3.anInt1619;
+                class50_sub1_sub4_sub3.anInt1588 = class50_sub1_sub4_sub3.turnAnimation;
             }
         }
     }
@@ -5161,48 +5168,48 @@ private static int PROCESS_PACKET_COUNT = 100;//5
                 class50_sub1_sub4_sub3.anInt1589 = 0;
             }
         }
-        if (class50_sub1_sub4_sub3.anInt1614 != -1 && pulseCycle >= class50_sub1_sub4_sub3.anInt1617) {
-            if (class50_sub1_sub4_sub3.anInt1615 < 0)
-                class50_sub1_sub4_sub3.anInt1615 = 0;
-            Animation class14_1 = SpotAnimation.spotAnimations[class50_sub1_sub4_sub3.anInt1614].animation;
-            class50_sub1_sub4_sub3.anInt1616++;
-            if (class50_sub1_sub4_sub3.anInt1615 < class14_1.anInt294
-                    && class50_sub1_sub4_sub3.anInt1616 > class14_1.method205(0, class50_sub1_sub4_sub3.anInt1615)) {
-                class50_sub1_sub4_sub3.anInt1616 = 1;
-                class50_sub1_sub4_sub3.anInt1615++;
+        if (class50_sub1_sub4_sub3.graphicAnimation != -1 && pulseCycle >= class50_sub1_sub4_sub3.graphicAnimationCycleEnd) {
+            if (class50_sub1_sub4_sub3.graphicAnimationFrame < 0)
+                class50_sub1_sub4_sub3.graphicAnimationFrame = 0;
+            Animation class14_1 = SpotAnimation.spotAnimations[class50_sub1_sub4_sub3.graphicAnimation].animation;
+            class50_sub1_sub4_sub3.graphicAnimationCycle++;
+            if (class50_sub1_sub4_sub3.graphicAnimationFrame < class14_1.anInt294
+                    && class50_sub1_sub4_sub3.graphicAnimationCycle > class14_1.method205(0, class50_sub1_sub4_sub3.graphicAnimationFrame)) {
+                class50_sub1_sub4_sub3.graphicAnimationCycle = 1;
+                class50_sub1_sub4_sub3.graphicAnimationFrame++;
             }
-            if (class50_sub1_sub4_sub3.anInt1615 >= class14_1.anInt294
-                    && (class50_sub1_sub4_sub3.anInt1615 < 0 || class50_sub1_sub4_sub3.anInt1615 >= class14_1.anInt294))
-                class50_sub1_sub4_sub3.anInt1614 = -1;
+            if (class50_sub1_sub4_sub3.graphicAnimationFrame >= class14_1.anInt294
+                    && (class50_sub1_sub4_sub3.graphicAnimationFrame < 0 || class50_sub1_sub4_sub3.graphicAnimationFrame >= class14_1.anInt294))
+                class50_sub1_sub4_sub3.graphicAnimation = -1;
         }
-        if (class50_sub1_sub4_sub3.anInt1624 != -1 && class50_sub1_sub4_sub3.anInt1627 <= 1) {
-            Animation class14_2 = Animation.animations[class50_sub1_sub4_sub3.anInt1624];
+        if (class50_sub1_sub4_sub3.currentAnimation != -1 && class50_sub1_sub4_sub3.animationDelay <= 1) {
+            Animation class14_2 = Animation.animations[class50_sub1_sub4_sub3.currentAnimation];
             if (class14_2.anInt305 == 1 && class50_sub1_sub4_sub3.anInt1613 > 0
                     && class50_sub1_sub4_sub3.anInt1606 <= pulseCycle && class50_sub1_sub4_sub3.anInt1607 < pulseCycle) {
-                class50_sub1_sub4_sub3.anInt1627 = 1;
+                class50_sub1_sub4_sub3.animationDelay = 1;
                 return;
             }
         }
-        if (class50_sub1_sub4_sub3.anInt1624 != -1 && class50_sub1_sub4_sub3.anInt1627 == 0) {
-            Animation class14_3 = Animation.animations[class50_sub1_sub4_sub3.anInt1624];
-            class50_sub1_sub4_sub3.anInt1626++;
-            if (class50_sub1_sub4_sub3.anInt1625 < class14_3.anInt294
-                    && class50_sub1_sub4_sub3.anInt1626 > class14_3.method205(0, class50_sub1_sub4_sub3.anInt1625)) {
-                class50_sub1_sub4_sub3.anInt1626 = 1;
-                class50_sub1_sub4_sub3.anInt1625++;
+        if (class50_sub1_sub4_sub3.currentAnimation != -1 && class50_sub1_sub4_sub3.animationDelay == 0) {
+            Animation class14_3 = Animation.animations[class50_sub1_sub4_sub3.currentAnimation];
+            class50_sub1_sub4_sub3.animationFrameCycle++;
+            if (class50_sub1_sub4_sub3.animationFrame < class14_3.anInt294
+                    && class50_sub1_sub4_sub3.animationFrameCycle > class14_3.method205(0, class50_sub1_sub4_sub3.animationFrame)) {
+                class50_sub1_sub4_sub3.animationFrameCycle = 1;
+                class50_sub1_sub4_sub3.animationFrame++;
             }
-            if (class50_sub1_sub4_sub3.anInt1625 >= class14_3.anInt294) {
-                class50_sub1_sub4_sub3.anInt1625 -= class14_3.anInt298;
-                class50_sub1_sub4_sub3.anInt1628++;
-                if (class50_sub1_sub4_sub3.anInt1628 >= class14_3.anInt304)
-                    class50_sub1_sub4_sub3.anInt1624 = -1;
-                if (class50_sub1_sub4_sub3.anInt1625 < 0 || class50_sub1_sub4_sub3.anInt1625 >= class14_3.anInt294)
-                    class50_sub1_sub4_sub3.anInt1624 = -1;
+            if (class50_sub1_sub4_sub3.animationFrame >= class14_3.anInt294) {
+                class50_sub1_sub4_sub3.animationFrame -= class14_3.anInt298;
+                class50_sub1_sub4_sub3.animationCycleReset++;
+                if (class50_sub1_sub4_sub3.animationCycleReset >= class14_3.anInt304)
+                    class50_sub1_sub4_sub3.currentAnimation = -1;
+                if (class50_sub1_sub4_sub3.animationFrame < 0 || class50_sub1_sub4_sub3.animationFrame >= class14_3.anInt294)
+                    class50_sub1_sub4_sub3.currentAnimation = -1;
             }
             class50_sub1_sub4_sub3.aBoolean1592 = class14_3.aBoolean300;
         }
-        if (class50_sub1_sub4_sub3.anInt1627 > 0)
-            class50_sub1_sub4_sub3.anInt1627--;
+        if (class50_sub1_sub4_sub3.animationDelay > 0)
+            class50_sub1_sub4_sub3.animationDelay--;
     }
 
     public void method74(int i) {
@@ -9691,34 +9698,46 @@ private static int PROCESS_PACKET_COUNT = 100;//5
     }
 
     public void addNewNpcs(JagBuffer buf, int i, boolean flag) {
-        if (flag)
-            anInt1140 = 287;
+        int maxNpcs = 16383; // artificial number, probably from memory contraints
+        // Continue reading new NPCs while buffer still has data
         while (buf.bitPosition + 21 < i * 8) {
             int index = buf.getBits(14);
-            if (index == 16383)
+            if (index == maxNpcs)
                 break;
+
+            // Create NPC if it doesn't exist
             if (npcs[index] == null)
                 npcs[index] = new Npc();
             Npc npc = npcs[index];
+
+            // Add to local NPC list 
             anIntArray1134[localNpcCount++] = index;
             npc.pulseCycle = pulseCycle;
+
+            // Check if this NPC needs a block update
             int updateRequired = buf.getBits(1);
             if (updateRequired == 1)
                 updatedPlayers[updatedPlayerCount++] = index;
+
+            // Read relative positions
             int deltaY = buf.getBits(5);
             if (deltaY > 15)
                 deltaY -= 32;
             int deltaX = buf.getBits(5);
             if (deltaX > 15)
                 deltaX -= 32;
+
+            // Should the walking queue be discarded?
             int discardWalkingQueue = buf.getBits(1);
+
+            // Read NPC defs and assign stats
             npc.def = NpcDefinition.forId(buf.getBits(13));
-            npc.anInt1601 = npc.def.aByte642;
-            npc.anInt1600 = npc.def.anInt651;
-            npc.anInt1619 = npc.def.anInt645;
-            npc.anInt1620 = npc.def.anInt643;
-            npc.anInt1621 = npc.def.anInt641;
-            npc.anInt1622 = npc.def.anInt633;
+            npc.size = npc.def.aByte642;
+            npc.walkAnimation = npc.def.anInt651;
+            npc.turnAnimation = npc.def.anInt645;
+            npc.standAnimation = npc.def.anInt643;
+            npc.deathAnimation = npc.def.anInt641;
+            npc.combatLevel = npc.def.anInt633;
             npc.anInt1634 = npc.def.anInt621;
             npc.teleport(thisPlayer.walkingQueueX[0] + deltaX, thisPlayer.walkingQueueY[0] + deltaY, discardWalkingQueue == 1);
         }
