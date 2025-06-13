@@ -47,29 +47,50 @@ public class Projectile extends Entity {
 
     }
 
+	/**
+	 * Retrieves and prepares the 3D model of this projectile for rendering.
+	 * Applies necessary transformations, animations, and lighting effects.
+	 *
+	 * @return The prepared Model for rendering, or null if the base model is not available
+	 */
 	@Override
 	public Model getModel() {
-		Model class50_sub1_sub4_sub4 = spotAnimation.getModel();
-		if (class50_sub1_sub4_sub4 == null)
+		Model baseModel = spotAnimation.getModel();
+		if (baseModel == null)
 			return null;
-		int i = -1;
-		if (spotAnimation.animation != null)
-			i = spotAnimation.animation.anIntArray295[currentFrame];
-		Model class50_sub1_sub4_sub4_1 = new Model(false, false, true,
-				class50_sub1_sub4_sub4, Class21.method239(i));
-		if (i != -1) {
-			class50_sub1_sub4_sub4_1.method584(7);
-			class50_sub1_sub4_sub4_1.method585(i, (byte) 6);
-			class50_sub1_sub4_sub4_1.anIntArrayArray1679 = null;
-			class50_sub1_sub4_sub4_1.anIntArrayArray1678 = null;
+
+		int currentAnimationFrame = -1;
+		if (spotAnimation.animation != null) {
+			currentAnimationFrame = spotAnimation.animation.anIntArray295[currentFrame];
 		}
-		if (spotAnimation.anInt561 != 128 || spotAnimation.anInt562 != 128)
-			class50_sub1_sub4_sub4_1.method593(spotAnimation.anInt562, spotAnimation.anInt561, 9,
+
+		Model projectileModel = new Model(false, false, true,
+				baseModel, Class21.method239(currentAnimationFrame));
+
+		if (currentAnimationFrame != -1) {
+			projectileModel.method584(7); //TODO apply effects
+			projectileModel.method585(currentAnimationFrame, (byte) 6); //TODO apply animations
+			projectileModel.anIntArrayArray1679 = null;
+			projectileModel.anIntArrayArray1678 = null;
+		}
+
+		// Apply scaling if needed
+		int defaultScaling = 128;
+		if (spotAnimation.anInt561 != defaultScaling || spotAnimation.anInt562 != defaultScaling)
+			projectileModel.method593(spotAnimation.anInt562, spotAnimation.anInt561, 9,
 					spotAnimation.anInt561);
-		class50_sub1_sub4_sub4_1.method589(pitch, 341);
-		class50_sub1_sub4_sub4_1.method594(64 + spotAnimation.anInt564, 850 + spotAnimation.anInt565, -30, -50, -30,
-				true);
-		return class50_sub1_sub4_sub4_1;
+
+		// Apply rotation (aka pitch) to the model
+		projectileModel.method589(pitch, 341); // TODO investigate 341
+
+		// Apply lighting and shading
+		projectileModel.method594(
+				64 + spotAnimation.anInt564, // ambient light
+				850 + spotAnimation.anInt565, // contrast
+				-30, -50, -30, // light direction vector
+				true // Apply lighting
+		);
+		return projectileModel;
 	}
 
 	public Projectile(int plane, int heightEnd, int distanceFromSource, int y, int id, int speed, int initialSlope, int target, int heightStart, int x,
