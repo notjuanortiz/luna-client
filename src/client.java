@@ -3426,13 +3426,21 @@ public class client extends JagApplet {
         stopMidi();
     }
 
-    public void method51() {
+    /**
+     * Updates and renders all active projectiles in the game world.
+     * This method is called every game tick to process projectile movement and rendering.
+     */
+    public void processProjectiles() {
         Projectile projectile = (Projectile) projectileQueue.first();
         for (; projectile != null; projectile = (Projectile) projectileQueue
                 .next())
-            if (projectile.plane != plane || pulseCycle > projectile.speed)
+            //Remove projectiles that are on a different plane or have expired
+            if (projectile.plane != plane || pulseCycle > projectile.speed) {
                 projectile.unlink();
+            }
+            // Process active projectiles
             else if (pulseCycle >= projectile.createdTime) {
+                // Handle projectiles targetting NPCs (positive target ID)
                 if (projectile.target > 0) {
                     Npc npc = npcs[projectile.target - 1];
                     if (npc != null
@@ -3440,13 +3448,14 @@ public class client extends JagApplet {
                             && npc.unitX < 13312
                             && npc.unitY >= 0
                             && npc.unitY < 13312)
-                        projectile.trackTarget(npc.unitX,
-                                npc.unitY, getFloorDrawHeight(
-                                        npc.unitY,
-                                        npc.unitX,
-                                        projectile.plane)
-                                        - projectile.heightEnd, pulseCycle);
+                        projectile.trackTarget(
+                                npc.unitX,
+                                npc.unitY,
+                                getFloorDrawHeight(npc.unitY, npc.unitX, projectile.plane) - projectile.heightEnd,
+                                pulseCycle);
                 }
+
+                // Handle projectiles targetting players (negative target ID)
                 if (projectile.target < 0) {
                     int i = -projectile.target - 1;
                     Player player;
@@ -3455,27 +3464,28 @@ public class client extends JagApplet {
                     else
                         player = players[i];
                     if (player != null
-                            && ((Actor) (player)).unitX >= 0
-                            && ((Actor) (player)).unitX < 13312
-                            && ((Actor) (player)).unitY >= 0
-                            && ((Actor) (player)).unitY < 13312)
-                        projectile.trackTarget(((Actor) (player)).unitX,
-                                ((Actor) (player)).unitY, getFloorDrawHeight(
-                                        ((Actor) (player)).unitY,
-                                        ((Actor) (player)).unitX,
-                                        projectile.plane)
-                                        - projectile.heightEnd, pulseCycle);
+                            && player.unitX >= 0
+                            && player.unitX < 13312
+                            && player.unitY >= 0
+                            && player.unitY < 13312)
+                        projectile.trackTarget(
+                                player.unitX,
+                                player.unitY,
+                                getFloorDrawHeight(player.unitY, player.unitX, projectile.plane) - projectile.heightEnd,
+                                pulseCycle);
                 }
-                projectile.method563(anInt951, false);
-                aClass22_1164.method252(-1, projectile, (int) projectile.aDouble1555,
-                        (int) projectile.aDouble1557, false, 0, plane, 60,
-                        (int) projectile.aDouble1556, projectile.anInt1562);
+                projectile.updatePosition(anInt951);
+
+                //Render the projectile
+                aClass22_1164.method252(-1, projectile, (int) projectile.startX,
+                        (int) projectile.startZ, false, 0, plane, 60,
+                        (int) projectile.startY, projectile.yaw);
             }
 
         anInt1168++;
         if (anInt1168 > 51) {
             anInt1168 = 0;
-            outBuffer.putOpcode(248);
+            outBuffer.putOpcode(248); // Keep-alive
         }
     }
 
@@ -10982,7 +10992,7 @@ public class client extends JagApplet {
         method57(751, true);
         method119(0, false);
         method57(751, false);
-        method51();
+        processProjectiles();
         method76(-992);
         if (!aBoolean1211) {
             int j = anInt1251;

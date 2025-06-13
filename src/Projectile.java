@@ -4,44 +4,48 @@
 
 public class Projectile extends Entity {
 
-	public void trackTarget(int offsetX, int offsetY, int heightDelta, int createTime) {
-		if (!aBoolean1575) {
-			double d = offsetX - x;
-			double d2 = offsetY - y;
-			double d3 = Math.sqrt(d * d + d2 * d2);
-			aDouble1555 = x + (d * distanceFromSource) / d3;
-			aDouble1556 = y + (d2 * distanceFromSource) / d3;
-			aDouble1557 = heightStart;
-		}
-		double d1 = (speed + 1) - createTime;
-		aDouble1569 = (offsetX - aDouble1555) / d1;
-		aDouble1570 = (offsetY - aDouble1556) / d1;
-		aDouble1571 = Math.sqrt(aDouble1569 * aDouble1569 + aDouble1570 * aDouble1570);
-		if (!aBoolean1575)
-			aDouble1572 = -aDouble1571 * Math.tan(initialSlope * 0.02454369D);
-		aDouble1574 = (2D * (heightDelta - aDouble1557 - aDouble1572 * d1)) / (d1 * d1);
-	}
+    public void trackTarget(int targetX, int targetY, int targetZ, int createTime) {
+        if (!hasMoved) {
+            double dx = targetX - x;
+            double dy = targetY - y;
+            double distance = Math.sqrt(dx * dx + dy * dy);
+            startX = x + (dx * distanceFromSource) / distance;
+            startY = y + (dy * distanceFromSource) / distance;
+            startZ = heightStart;
+        }
+        double timeRemaining = (speed + 1) - createTime;
+        velocityX = (targetX - startX) / timeRemaining;
+        velocityY = (targetY - startY) / timeRemaining;
+        horizontalVelocity = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
+        if (!hasMoved)
+            velocityZ = -horizontalVelocity * Math.tan(initialSlope * 0.02454369D);
+        gravity = (2D * (targetZ - startZ - velocityZ * timeRemaining)) / (timeRemaining * timeRemaining);
+    }
 
-	public void method563(int i, boolean flag) {
-		aBoolean1575 = true;
-		aDouble1555 += aDouble1569 * i;
-		if (flag) {
-			for (int j = 1; j > 0; j++);
-		}
-		aDouble1556 += aDouble1570 * i;
-		aDouble1557 += aDouble1572 * i + 0.5D * aDouble1574 * i * i;
-		aDouble1572 += aDouble1574 * i;
-		anInt1562 = (int) (Math.atan2(aDouble1569, aDouble1570) * 325.94900000000001D) + 1024 & 0x7ff;
-		anInt1563 = (int) (Math.atan2(aDouble1572, aDouble1571) * 325.94900000000001D) & 0x7ff;
-		if (spotAnimation.animation != null)
-			for (anInt1568 += i; anInt1568 > spotAnimation.animation.method205(0, anInt1567);) {
-				anInt1568 -= spotAnimation.animation.method205(0, anInt1567);
-				anInt1567++;
-				if (anInt1567 >= spotAnimation.animation.anInt294)
-					anInt1567 = 0;
-			}
+    /**
+     * Updates the projectiles position based on velocity and gravity.
+     */
+    public void updatePosition(int deltaTime) {
+        hasMoved = true;
+        startX += velocityX * deltaTime;
+        startY += velocityY * deltaTime;
+        startZ += velocityZ * deltaTime + 0.5D * gravity * deltaTime * deltaTime;
+        velocityZ += gravity * deltaTime;
 
-	}
+        // Calculate yaw (aka horizontal rotation)
+        yaw = (int) (Math.atan2(velocityX, velocityY) * 325.949) + 1024 & 0x7ff;
+
+        // Calculate pitch (aka vertical rotation)
+        pitch = (int) (Math.atan2(velocityZ, horizontalVelocity) * 325.949) & 0x7ff;
+        if (spotAnimation.animation != null)
+            for (animationFrame += deltaTime; animationFrame > spotAnimation.animation.method205(0, currentFrame); ) {
+                animationFrame -= spotAnimation.animation.method205(0, currentFrame);
+                currentFrame++;
+                if (currentFrame >= spotAnimation.animation.anInt294)
+                    currentFrame = 0;
+            }
+
+    }
 
 	@Override
 	public Model getModel() {
@@ -50,7 +54,7 @@ public class Projectile extends Entity {
 			return null;
 		int i = -1;
 		if (spotAnimation.animation != null)
-			i = spotAnimation.animation.anIntArray295[anInt1567];
+			i = spotAnimation.animation.anIntArray295[currentFrame];
 		Model class50_sub1_sub4_sub4_1 = new Model(false, false, true,
 				class50_sub1_sub4_sub4, Class21.method239(i));
 		if (i != -1) {
@@ -62,7 +66,7 @@ public class Projectile extends Entity {
 		if (spotAnimation.anInt561 != 128 || spotAnimation.anInt562 != 128)
 			class50_sub1_sub4_sub4_1.method593(spotAnimation.anInt562, spotAnimation.anInt561, 9,
 					spotAnimation.anInt561);
-		class50_sub1_sub4_sub4_1.method589(anInt1563, 341);
+		class50_sub1_sub4_sub4_1.method589(pitch, 341);
 		class50_sub1_sub4_sub4_1.method594(64 + spotAnimation.anInt564, 850 + spotAnimation.anInt565, -30, -50, -30,
 				true);
 		return class50_sub1_sub4_sub4_1;
@@ -83,32 +87,32 @@ public class Projectile extends Entity {
 		this.distanceFromSource = distanceFromSource;
 		this.target = target;
 		this.heightEnd = heightEnd;
-		aBoolean1575 = false;
+		hasMoved = false;
 		return;
 	}
 
 	public SpotAnimation spotAnimation;
 	public int plane;
-	public double aDouble1555;
-	public double aDouble1556;
-	public double aDouble1557;
+	public double startX;
+	public double startY;
+	public double startZ;
 	public int initialSlope;
 	public int distanceFromSource;
 	public int target;
 	public boolean aBoolean1561;
-	public int anInt1562;
-	public int anInt1563;
+	public int yaw;
+	public int pitch;
 	public int createdTime;
 	public int speed;
-	public int anInt1567;
-	public int anInt1568;
-	public double aDouble1569;
-	public double aDouble1570;
-	public double aDouble1571;
-	public double aDouble1572;
+	public int currentFrame;
+	public int animationFrame;
+	public double velocityX;
+	public double velocityY;
+	public double horizontalVelocity;
+	public double velocityZ;
 	public boolean aBoolean1573;
-	public double aDouble1574;
-	public boolean aBoolean1575;
+	public double gravity;
+	public boolean hasMoved;
 	public int x;
 	public int y;
 	public int heightStart;
