@@ -3477,7 +3477,7 @@ public class client extends JagApplet {
                 projectile.updatePosition(anInt951);
 
                 //Render the projectile
-                aClass22_1164.method252(-1, projectile, (int) projectile.startX,
+                aClass22_1164.canPlaceEntity(-1, projectile, (int) projectile.startX,
                         (int) projectile.startZ, false, 0, plane, 60,
                         (int) projectile.startY, projectile.yaw);
             }
@@ -3755,7 +3755,7 @@ public class client extends JagApplet {
             }
             if (!class50_sub1_sub4_sub3_sub1.def.aBoolean631)
                 k += 0x80000000;
-            aClass22_1164.method252(k, class50_sub1_sub4_sub3_sub1,
+            aClass22_1164.canPlaceEntity(k, class50_sub1_sub4_sub3_sub1,
                     ((Actor) (class50_sub1_sub4_sub3_sub1)).unitX, getFloorDrawHeight(
                             ((Actor) (class50_sub1_sub4_sub3_sub1)).unitY,
                             ((Actor) (class50_sub1_sub4_sub3_sub1)).unitX, plane),
@@ -5554,7 +5554,7 @@ public class client extends JagApplet {
                 if (graphic.aBoolean1736)
                     graphic.unlink();
                 else
-                    aClass22_1164.method252(-1, graphic, graphic.anInt1732,
+                    aClass22_1164.canPlaceEntity(-1, graphic, graphic.anInt1732,
                             graphic.anInt1734, false, 0, graphic.anInt1731, 60,
                             graphic.anInt1733, 0);
             }
@@ -8225,7 +8225,7 @@ public class client extends JagApplet {
             }
             class50_sub1_sub4_sub3_sub2.anInt1750 = getFloorDrawHeight(((Actor) (class50_sub1_sub4_sub3_sub2)).unitY,
                     ((Actor) (class50_sub1_sub4_sub3_sub2)).unitX, plane);
-            aClass22_1164.method252(l, class50_sub1_sub4_sub3_sub2,
+            aClass22_1164.canPlaceEntity(l, class50_sub1_sub4_sub3_sub2,
                     ((Actor) (class50_sub1_sub4_sub3_sub2)).unitX, class50_sub1_sub4_sub3_sub2.anInt1750,
                     ((Actor) (class50_sub1_sub4_sub3_sub2)).aBoolean1592, 0, plane, 60,
                     ((Actor) (class50_sub1_sub4_sub3_sub2)).unitY,

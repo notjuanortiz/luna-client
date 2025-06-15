@@ -272,31 +272,31 @@ public class SceneGraph {
 		}
 	}
 
-	public boolean method252(int i, Entity class50_sub1_sub4, int j, int k, boolean flag, int l, int i1,
-			int j1, int k1, int l1) {
-		if (class50_sub1_sub4 == null)
+	public boolean canPlaceEntity(int entityType, Entity entity, int x, int k, boolean adjustForAngle, int l, int i1,
+								  int entityWidth, int z, int facingAngle) {
+		if (entity == null)
 			return true;
-		int i2 = j - j1;
-		int j2 = k1 - j1;
-		int k2 = j + j1;
-		int l2 = k1 + j1;
-		if (flag) {
-			if (l1 > 640 && l1 < 1408)
-				l2 += 128;
-			if (l1 > 1152 && l1 < 1920)
-				k2 += 128;
-			if (l1 > 1664 || l1 < 384)
-				j2 -= 128;
-			if (l1 > 128 && l1 < 896)
-				i2 -= 128;
+		int minX = x - entityWidth;
+		int minY = z - entityWidth;
+		int maxX = x + entityWidth;
+		int maxY = z + entityWidth;
+		if (adjustForAngle) {
+			if (facingAngle > 640 && facingAngle < 1408)
+				maxY += 128;
+			if (facingAngle > 1152 && facingAngle < 1920)
+				maxX += 128;
+			if (facingAngle > 1664 || facingAngle < 384)
+				minY -= 128;
+			if (facingAngle > 128 && facingAngle < 896)
+				minX -= 128;
 		}
-		i2 /= 128;
+		minX /= 128;
 		if (l != 0)
 			anInt450 = 368;
-		j2 /= 128;
-		k2 /= 128;
-		l2 /= 128;
-		return method254(i1, i2, j2, (k2 - i2) + 1, (l2 - j2) + 1, j, k1, k, class50_sub1_sub4, l1, true, i, (byte) 0);
+		minY /= 128;
+		maxX /= 128;
+		maxY /= 128;
+		return method254(i1, minX, minY, (maxX - minX) + 1, (maxY - minY) + 1, x, z, k, entity, facingAngle, true, entityType, (byte) 0);
 	}
 
 	public boolean method253(int i, int j, int k, int l, Entity class50_sub1_sub4, int i1, int j1, int k1,
